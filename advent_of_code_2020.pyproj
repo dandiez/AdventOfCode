@@ -41,7 +41,7 @@
     <Content Include="input6.txt" />
     <Content Include="input7.txt" />
     <Content Include="input2.txt" />
-    <Content Include="_input1.txt" />
+    <Content Include="input1.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
