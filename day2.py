@@ -29,7 +29,7 @@ class Pass():
         return False
 
 
-with open("Input2.txt") as f:
+with open("input2.txt") as f:
     lines = f.readlines()
 print(sum([Pass(p).is_valid() for p in lines]))
 print(sum([Pass(p).new_is_valid() for p in lines]))

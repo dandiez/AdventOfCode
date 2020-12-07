@@ -1,6 +1,6 @@
 
 
-with open("Input1.txt") as f:
+with open("input1.txt") as f:
     a = [ int(line) for line in f.readlines() if line.strip()]
 
 def find(a, target=2020):
