@@ -59,7 +59,7 @@ class Grid:
         xx = x
         yy = y
         d = 0
-        while (0 <= xx <= g.x_max) and (0 <= yy <= g.y_max) and (d < max_distance):
+        while (0 <= xx < g.x_max) and (0 <= yy < g.y_max) and (d < max_distance):
             xx += dx
             yy += dy
             d += 1
