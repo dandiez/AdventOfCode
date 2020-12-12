@@ -10,19 +10,19 @@ from math import cos, sin, pi
 with open("input12.txt") as f:
     lines = [line.strip() for line in f.readlines() if line.strip()]
 
-ins = [
-    parse("{}{:d}", line).fixed for line in lines
-]
+ins = [parse("{}{:d}", line).fixed for line in lines]
 
-xy = np.array((0., 0.))
-d = np.array((1., 0.))
+xy = np.array((0.0, 0.0))
+d = np.array((1.0, 0.0))
 
 
 def get_rot_matrix(n):
-    return np.array([
-        [cos(np.deg2rad(n)), -sin(np.deg2rad(n))],
-        [sin(np.deg2rad(n)), cos(np.deg2rad(n))]
-    ])
+    return np.array(
+        [
+            [cos(np.deg2rad(n)), -sin(np.deg2rad(n))],
+            [sin(np.deg2rad(n)), cos(np.deg2rad(n))],
+        ]
+    )
 
 
 for (i, n) in ins:
@@ -45,8 +45,8 @@ for (i, n) in ins:
 
 print(abs(xy[0]) + abs(xy[1]))
 
-xy = np.array((10., 1.))
-xys = np.array((0., 0.))
+xy = np.array((10.0, 1.0))
+xys = np.array((0.0, 0.0))
 
 for (i, n) in ins:
     if i == "F":

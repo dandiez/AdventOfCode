@@ -1,13 +1,10 @@
-
-
-
-#with open("input6.txt") as f:
+# with open("input6.txt") as f:
 #    raw = f.read()
 
-#pp = raw.split("\n\n")
+# pp = raw.split("\n\n")
 
-#sum = 0
-#for a in pp:
+# sum = 0
+# for a in pp:
 
 #    if not a:
 #        continue
@@ -17,9 +14,9 @@
 #    for a in a_all:
 #        aset.add(a)
 #    sum += len(aset)
-    
-#print(sum)
-    
+
+# print(sum)
+
 
 with open("input6.txt") as f:
     raw = f.read()
@@ -31,7 +28,6 @@ for a in pp:
     if not a:
         continue
     alist = a.split("\n")
-    a_sets = [ set(list(a)) for a in alist]
+    a_sets = [set(list(a)) for a in alist]
     sum += len(set.intersection(*a_sets))
 print(sum)
-    

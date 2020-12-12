@@ -1,6 +1,4 @@
-
-class Pass():
-
+class Pass:
     def __init__(self, line, *args, **kwargs):
         a, self.password = line.split(": ")
         nums, self.letter = a.split()
@@ -15,13 +13,13 @@ class Pass():
     def new_is_valid(self):
         valid_letters = 0
         try:
-            if self.password[self.min-1] == self.letter:
-                valid_letters+=1
+            if self.password[self.min - 1] == self.letter:
+                valid_letters += 1
         except:
             pass
         try:
-            if self.password[self.max-1] == self.letter:
-                valid_letters+=1
+            if self.password[self.max - 1] == self.letter:
+                valid_letters += 1
         except:
             pass
         if valid_letters == 1:
