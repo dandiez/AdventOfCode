@@ -33,9 +33,9 @@ for (i, n) in ins:
     if i == "S":
         xy += np.array((0, -1)) * n
     if i == "E":
-        xy += np.array((0, 1)) * n
+        xy += np.array((1, 0)) * n
     if i == "W":
-        xy += np.array((0, -1)) * n
+        xy += np.array((-1, 0)) * n
     if i == "L":
         m = get_rot_matrix(n)
         d = m.dot(d)
