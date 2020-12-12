@@ -22,7 +22,7 @@ def get_rot_matrix(n):
     return np.array([
         [cos(np.deg2rad(n)), -sin(np.deg2rad(n))],
         [sin(np.deg2rad(n)), cos(np.deg2rad(n))]
-    ])
+    ])#.astype(int)
 
 
 for (i, n) in ins:
