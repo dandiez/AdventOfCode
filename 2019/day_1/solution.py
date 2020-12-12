@@ -12,17 +12,23 @@ from unittest import TestCase
 def read_input(filename="input.txt"):
     with open(filename) as f:
         lines = [line.strip() for line in f.readlines() if line.strip()]
-    inp = lines  # parse here...
+    inp = [int(val) for val in lines]  # parse here...
     return inp
 
 
 def part_1(inp):
-    p_1 = None
+    p_1 = sum((m // 3 - 2 for m in inp))
     return p_1
 
 
 def part_2(inp):
-    p_2 = None
+    tot_f = 0
+    for m in inp:
+        f = m // 3 - 2
+        while f >= 0:
+            tot_f += f
+            f = f // 3 - 2
+    p_2 = tot_f
     return p_2
 
 
@@ -43,7 +49,7 @@ def main(input_file):
 def test_sample_1(self):
     input_file = "sample_1.txt"
     p1, p2 = main(input_file)
-    # self.assertEqual( , p1)
+    self.assertEqual(2 + 2 + 654 + 33583, p1)
     # self.assertEqual( , p2)
     print("***Tests 1 passed so far***")
 
@@ -51,8 +57,8 @@ def test_sample_1(self):
 def test_sample_2(self):
     input_file = "sample_2.txt"
     p1, p2 = main(input_file)
-    # self.assertEqual( , p1)
-    # self.assertEqual( , p2)
+    # self.assertEqual(2+2+654+33583 , p1)
+    self.assertEqual(2 + 966 + 50346, p2)
     print("***Tests 2 passed so far***")
 
 
