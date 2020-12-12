@@ -31,24 +31,22 @@ def main(input_file):
     # part 1
     inp = read_input(input_file)
     p1 = part_1(inp)
-    print(p1)
+    print(f"Solution to part 1: {p1}")
 
     # part 2
     inp = read_input(input_file)
     p2 = part_2(inp)
-    print(p2)
+    print(f"Solution to part 2: {p2}")
     return p1, p2
 
 
-def test_sample_1(self):
+def test_samples(self):
     input_file = "sample_1.txt"
     p1, p2 = main(input_file)
     # self.assertEqual( , p1)
     # self.assertEqual( , p2)
     print("***Tests 1 passed so far***")
 
-
-def test_sample_2(self):
     input_file = "sample_2.txt"
     p1, p2 = main(input_file)
     # self.assertEqual( , p1)
@@ -57,6 +55,5 @@ def test_sample_2(self):
 
 
 if __name__ == "__main__":
-    test_sample_1(TestCase())
-    test_sample_2(TestCase())
+    test_samples(TestCase())
     main("full.txt")
