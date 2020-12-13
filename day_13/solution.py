@@ -42,25 +42,43 @@ def part_1(inp):
 def part_2(inp):
     _, _, buses = inp
     print(buses)
+    # sort from longest period down, such that we check buses with longer intervals first
     r = {v: k for k, v in sorted(buses.items(), reverse=True, key=lambda item: item[1])}
     longest = list(r.keys())[0]
     offset_longest = r[longest]
     assert longest == max(buses.values())
+    # first possible time for the bus with the longest period (ID) is the period "longest" minus its offset
     t = longest - offset_longest
+    # next possible time is a period afterwards (longest), so start with dt = longest
     dt = longest
     print("longest", longest, "offset", offset_longest)
+    # by definition, we have chosen the bus with the longest period as a reference, therefore
+    # the time t will always be ok for it.
     ok = [longest]
     while True:
         all_good = True
         for v, k in r.items():
             if v in ok:
+                # because we keep choosing the dt such that the ok buses fit to the time, we don't need
+                # to check for them. Deleting them from the dictionary midloop breaks the loop.
                 continue
             if (t + k) % v != 0:
+                # for a bus with period v and offset k, the t is a good answer only if
+                # we wait the offset after t, i.e., (t+k) and that returns a time that happens to be a multiple
+                # of the bus' period v (i.e., the bus is back).
+                # If this is not the case, then the time t is not a good answer and we should check the next
+                # opportunity after dt.
                 all_good = False
                 break
             else:
+                # We found a time t for which a new bus is correctly aligned.
+                # The question is, how long will it be until these buses meet eachother again at the correct offsets?
+                # Say the first bus arrives every 4min and the second every 3min, then every 12min the cycle repeats
+                # itself and both buses are in the same relative position to one another. So, if we were checking every
+                # 4 minutes, now we can check every 12min (from the current time t which had the buses aligned,
+                # meaning, they will continue to stay aligned if we keep checking in these intervals).
                 print(t)
-                dt *= v  # in general it should probably be lcm
+                dt *= v  # in general it should probably be the l.c.m., or we might skip the first instance of the time
                 ok.append(v)
         if not all_good:
             t += dt
