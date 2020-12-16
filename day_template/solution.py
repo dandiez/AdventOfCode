@@ -6,6 +6,7 @@ from collections import defaultdict
 import itertools
 import numpy as np
 from math import cos, sin, pi
+import contextlib
 from unittest import TestCase
 
 
