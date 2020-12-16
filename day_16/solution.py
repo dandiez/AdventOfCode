@@ -22,11 +22,9 @@ def part_1(inp):
     rules = [line.strip() for line in r.splitlines() if line.strip()]
     mine = [line.strip() for line in m.splitlines() if line.strip()]
     other = [line.strip() for line in b.splitlines() if line.strip()]
-    print(rules)
-    print(mine)
-    print(other)
     rules_dict = dict()
-    just_ranges = []
+    my_ticket = [int(val) for val in mine[0].split(",")]
+    print("My ticket", my_ticket)
     for r in rules:
         c, rng = r.split(": ")
         r1, r2 = rng.split(" or ")
@@ -37,6 +35,7 @@ def part_1(inp):
     print("other tickets", other_tickets)
     print(rules_dict)
     bad = 0
+    good_tickets = copy.deepcopy(other_tickets)
     for t in other_tickets:
         print("ticket is ", t)
         for val in t:
@@ -49,7 +48,38 @@ def part_1(inp):
                     break
             if not is_ok:
                 bad += val
-
+                good_tickets.remove(t)
+    print("good tickets:", good_tickets)
+    ok_fields = {pos: list(rules_dict.keys()) for pos, _ in enumerate(my_ticket)}
+    print("ok fileds", ok_fields)
+    for t in good_tickets:
+        for pos, num in enumerate(t):
+            for rule_name, rule in rules_dict.items():
+                r1a, r1b = rule[0]
+                r1c, r1d = rule[1]
+                if not ((r1a <= num <= r1b) or (r1c <= num <= r1d)):
+                    print("Removing field", pos, num, rule_name, rule)
+                    ok_fields[pos].remove(rule_name)
+    print("OK Fields:")
+    mapped = {}
+    updated = True
+    p2 = 1
+    while updated:
+        updated = False
+        for k, v in ok_fields.items():
+            if len(v) == 1:
+                found = v[0]
+                mapped[found] = my_ticket[k]
+                if found.startswith("departure"):
+                    p2 *= my_ticket[k]
+                for ff in ok_fields.values():
+                    try:
+                        ff.remove(found)
+                    except ValueError:
+                        pass
+                updated = True
+    print(mapped)
+    print("P2:", p2)
     p_1 = bad
     return p_1
 
