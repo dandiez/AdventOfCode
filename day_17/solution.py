@@ -20,11 +20,11 @@ def read_input(filename="input.txt"):
     z_ini = 0
     w_ini = 0
 
-    g = []
+    g = set()
     for x, line in enumerate(lines):
         for y, val in enumerate(line):
             if val == "#":
-                g.append((x, y, z_ini, w_ini))
+                g.add((x, y, z_ini, w_ini))
     inp = g
     print(g)
 
@@ -44,7 +44,7 @@ def part_1(inp):
     g = inp
 
     def run_sim(g):
-        g_new = []
+        g_new = set()
         grids_to_check = set()
         for x, y, z, w in g:
             grids_to_check = grids_to_check.union(set(neighbours(x, y, z, w)))
@@ -54,9 +54,9 @@ def part_1(inp):
                 if n in g:
                     active_n += 1
             if (x, y, z, w) in g and active_n in (2, 3):
-                g_new.append((x, y, z, w))
+                g_new.add((x, y, z, w))
             elif (x, y, z, w) not in g and active_n == 3:
-                g_new.append((x, y, z, w))
+                g_new.add((x, y, z, w))
         return g_new
 
     for i in range(6):
