@@ -18,12 +18,13 @@ def read_input(filename="input.txt"):
     x_ini = len(lines[0])
     y_ini = len(lines)
     z_ini = 0
+    w_ini = 0
 
     g = []
     for x, line in enumerate(lines):
         for y, val in enumerate(line):
             if val == "#":
-                g.append((x, y, z_ini))
+                g.append((x, y, z_ini, w_ini))
     inp = g
     print(g)
 
@@ -31,11 +32,11 @@ def read_input(filename="input.txt"):
 
 
 @functools.lru_cache(None)
-def neighbours(x, y, z):
+def neighbours(x, y, z, w):
     n = []
-    for dx, dy, dz in itertools.product((-1, 0, 1), repeat=3):
-        if (dx, dy, dz) != (0, 0, 0):
-            n.append((x + dx, y + dy, z + dz))
+    for dx, dy, dz, dw in itertools.product((-1, 0, 1), repeat=4):
+        if (dx, dy, dz, dw) != (0, 0, 0, 0):
+            n.append((x + dx, y + dy, z + dz, w + dw))
     return n
 
 
@@ -43,36 +44,27 @@ def part_1(inp):
     g = inp
 
     def run_sim(g):
-        x_max, x_min, y_max, y_min, z_max, z_min = get_limits(g)
         g_new = []
-        for x in range(x_min - 1, x_max + 2):
-            for y in range(y_min - 1, y_max + 2):
-                for z in range(z_min - 1, z_max + 2):
-                    active_n = 0
-                    for n in neighbours(x, y, z):
-                        if n in g:
-                            active_n += 1
-                    if (x, y, z) in g and active_n in (2, 3):
-                        g_new.append((x, y, z))
-                    elif (x, y, z) not in g and active_n == 3:
-                        g_new.append((x, y, z))
+        grids_to_check = set()
+        for x, y, z, w in g:
+            grids_to_check = grids_to_check.union(set(neighbours(x, y, z, w)))
+        for x, y, z, w in grids_to_check:
+            active_n = 0
+            for n in neighbours(x, y, z, w):
+                if n in g:
+                    active_n += 1
+            if (x, y, z, w) in g and active_n in (2, 3):
+                g_new.append((x, y, z, w))
+            elif (x, y, z, w) not in g and active_n == 3:
+                g_new.append((x, y, z, w))
         return g_new
 
     for i in range(6):
         g = run_sim(g)
+        print(".")
 
     p_1 = len(g)
     return p_1
-
-
-def get_limits(g):
-    xs = [x for x, y, z in g]
-    ys = [y for x, y, z in g]
-    zs = [z for x, y, z in g]
-    x_min, x_max = min(xs), max(xs)
-    y_min, y_max = min(ys), max(ys)
-    z_min, z_max = min(zs), max(zs)
-    return x_max, x_min, y_max, y_min, z_max, z_min
 
 
 def part_2(inp):
@@ -97,8 +89,8 @@ def main(input_file):
 def test_samples(self):
     input_file = "sample_1.txt"
     p1, p2 = main(input_file)
-    self.assertEqual(112, p1)
-    # self.assertEqual( , p2)
+    self.assertEqual(848, p1)
+    # self.assertEqual(112, p2)
     print("***Tests 1 passed so far***")
 
     # input_file = "sample_2.txt"
