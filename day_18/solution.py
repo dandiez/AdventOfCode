@@ -23,28 +23,28 @@ def exp_to_num(expr, p2=False):
     return eval(_eval(expr, p2=p2)[0])
 
 
-def _eval(expr: [str], p2: bool):
+def _eval(ex: [str], p2: bool):
     # recursive evaluation of only one thing at a time, in order of precedence
-    if ")" in expr:
-        cl = expr.index(")")  # leftmost close bracket
-        op = max(tuple(i for i, c in enumerate(expr[:cl]) if c == "("))  # matching bracket
+    if ")" in ex:
+        cl = ex.index(")")  # leftmost close bracket
+        op = max(tuple(i for i, c in enumerate(ex[:cl]) if c == "("))  # matching bracket
         return _eval(
-            expr[:op]
-            + _eval(expr[op + 1:cl], p2)
-            + expr[cl + 1:],
+            ex[:op]
+            + _eval(ex[op + 1:cl], p2)
+            + ex[cl + 1:],
             p2)
     if p2:
-        if "+" in expr:
-            pos = expr.index("+")
+        if "+" in ex:
+            pos = ex.index("+")
             return _eval(
-                expr[:pos - 1]
-                + [str(eval("".join(expr[pos - 1:pos + 2])))]
-                + expr[pos + 2:],
+                ex[:pos - 1]
+                + [str(eval("".join(ex[pos - 1:pos + 2])))]
+                + ex[pos + 2:],
                 p2)
-    if len(expr) >= 3:
-        return _eval([str(eval("".join(expr[:3])))] + expr[3:], p2)
-    assert len(expr) == 1, "ups"
-    return expr
+    if len(ex) >= 3:
+        return _eval([str(eval("".join(ex[:3])))] + ex[3:], p2)
+    assert len(ex) == 1, "ups"
+    return ex
 
 
 def main(input_file):
