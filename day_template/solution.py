@@ -17,26 +17,15 @@ def read_input(filename="input.txt"):
     return inp
 
 
-def part_1(inp):
-    p_1 = None
-    return p_1
-
-
-def part_2(inp):
-    p_2 = None
-    return p_2
-
-
 def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
     # part 1
     inp = read_input(input_file)
-    p1 = part_1(inp)
-    print(f"Solution to part 1: {p1}")
 
-    # part 2
-    inp = read_input(input_file)
-    p2 = part_2(inp)
+
+    p1 = None
+    p2 = None
+    print(f"Solution to part 1: {p1}")
     print(f"Solution to part 2: {p2}")
     return p1, p2
 
@@ -44,15 +33,9 @@ def main(input_file):
 def test_samples(self):
     input_file = "sample_1.txt"
     p1, p2 = main(input_file)
-    # self.assertEqual( , p1)
+    self.assertEqual( , p1)
     # self.assertEqual( , p2)
-    print("***Tests 1 passed so far***")
-
-    input_file = "sample_2.txt"
-    p1, p2 = main(input_file)
-    # self.assertEqual( , p1)
-    # self.assertEqual( , p2)
-    print("***Tests 2 passed so far***")
+    print("***Tests passed so far***")
 
 
 if __name__ == "__main__":

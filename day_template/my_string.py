@@ -1,8 +1,4 @@
-class _str(type):
-
-    def __new__(mcs, _string):
-        obj = type('_str', (type,), {})
-        return obj
+class _str():
 
     def __init__(self, _string):
         self._str = _string
