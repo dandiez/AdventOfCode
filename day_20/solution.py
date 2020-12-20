@@ -59,7 +59,7 @@ def get_next_empty(grid, size):
     for r in range(size):
         for c in range(size):
             if grid[r, c] is None:
-                print("Next empty is", (r, c))
+                # print("Next empty is", (r, c))
                 return (r, c)
 
 
@@ -165,6 +165,37 @@ def solve(grid, tiles_left, size, tiles_dict):
     #     if not validate(grid, tiles_dict):
 
 
+def create_image(grid, side_length, tiles_dict):
+    blocks = []
+    for r in range(side_length):
+        r_blocks = []
+        for c in range(side_length):
+            pos = grid[(r, c)]
+            t = get_rotated_tile(pos, tiles_dict)
+            t_strip = t[1:-1, 1:-1]
+            # print(t_strip)
+            r_blocks.append(t_strip)
+
+        blocks.append(np.concatenate(r_blocks, axis=1))
+        # print(blocks)
+    return np.concatenate(blocks, axis=0)
+
+
+def count_sea(variation, sea_monster):
+    monster_shape = sea_monster.shape
+    variation_shape = variation.shape
+    monster_space = np.sum(sea_monster)
+    monsters_found = 0
+    for r in range(variation_shape[0] - monster_shape[0]):
+        for c in range(variation_shape[1] - monster_shape[1]):
+            search_space = variation[r:r + monster_shape[0], c:c + monster_shape[1]]
+            assert search_space.shape == monster_shape
+            if np.sum(np.multiply(search_space, sea_monster)) == monster_space:
+                print("found a monster! coords:", r, c)
+                monsters_found += 1
+    return np.sum(variation) - monsters_found * monster_space
+
+
 def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
     # part 1
@@ -188,7 +219,21 @@ def main(input_file):
          * int(grid[side_length - 1, 0][0]) \
          * int(grid[side_length - 1, side_length - 1][0])
 
-    p2 = None
+    img = create_image(grid, side_length, tiles_dict)
+    sea_monster = np.array(
+        [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+         [1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1],
+         [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0]])
+    print(img)
+    print(img.shape)
+    non_monsters = []
+    for variation in [np.rot90(img, k=n) for n in range(4)] + [
+        np.rot90(np.fliplr(img), k=n) for n in
+        range(4)]:
+        non_monsters.append(count_sea(variation, sea_monster))
+
+    print("Non monsters", non_monsters)
+    p2 = min(non_monsters)
     print(f"Solution to part 1: {p1}")
     print(f"Solution to part 2: {p2}")
     return p1, p2
@@ -198,7 +243,7 @@ def test_samples(self):
     input_file = "sample_1.txt"
     p1, p2 = main(input_file)
     self.assertEqual(20899048083289, p1)
-    # self.assertEqual( , p2)
+    self.assertEqual(273, p2)
     print("***Tests passed so far***")
 
 
