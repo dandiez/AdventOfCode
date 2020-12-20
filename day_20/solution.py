@@ -92,20 +92,12 @@ def get_candidates(grid, tiles_left, location, tiles_dict):
     all_positions_left = itertools.product(tiles_left, range(8))
     candidates = []
     r, c = location
-    if r != 0:
-        top_n = grid[(location[0] - 1, location[1])]
-    else:
-        top_n = None
-    if c != 0:
-        left_n = grid[(location[0], location[1] - 1)]
-    else:
-        left_n = None
     for pos in all_positions_left:
-        if top_n is not None:
-            if not tb_fit(top_n, pos, tiles_dict):
+        if r != 0:
+            if not tb_fit(grid[(location[0] - 1, location[1])], pos, tiles_dict):
                 continue
-        if left_n is not None:
-            if not lr_fit(left_n, pos, tiles_dict):
+        if c != 0:
+            if not lr_fit(grid[(location[0], location[1] - 1)], pos, tiles_dict):
                 continue
         candidates.append(pos)
     return candidates
