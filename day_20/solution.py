@@ -35,14 +35,14 @@ def c_to_num(c):
         raise ValueError
 
 
-class Tile():
+class Tile:
     def __init__(self, num, body):
         self.num = num
         self._raw = body
         self.b = np.array([[c_to_num(c) for c in s] for s in body], int)
         self.rotations = [np.rot90(self.b, k=n) for n in range(4)] + [
-            np.rot90(np.fliplr(self.b), k=n) for n in
-            range(4)]
+            np.rot90(np.fliplr(self.b), k=n) for n in range(4)
+        ]
         assert len(self.rotations) == 8
         self.position = 0
         self.location = None
@@ -70,9 +70,7 @@ def get_rotated_tile(pos, tiles_dict):
 def lr_fit(left, right, tiles_dict):
     left_rc = get_rotated_tile(left, tiles_dict)[:, -1]
     right_lc = get_rotated_tile(right, tiles_dict)[:, 0]
-    if all(
-            left_rc == right_lc
-    ):
+    if all(left_rc == right_lc):
         return True
     return False
 
@@ -80,9 +78,7 @@ def lr_fit(left, right, tiles_dict):
 def tb_fit(top, bottom, tiles_dict):
     top_br = get_rotated_tile(top, tiles_dict)[-1, :]
     bottom_tr = get_rotated_tile(bottom, tiles_dict)[0, :]
-    if all(
-            top_br == bottom_tr
-    ):
+    if all(top_br == bottom_tr):
         return True
     return False
 
@@ -188,7 +184,7 @@ def count_sea(variation, sea_monster):
     monsters_found = 0
     for r in range(variation_shape[0] - monster_shape[0]):
         for c in range(variation_shape[1] - monster_shape[1]):
-            search_space = variation[r:r + monster_shape[0], c:c + monster_shape[1]]
+            search_space = variation[r : r + monster_shape[0], c : c + monster_shape[1]]
             assert search_space.shape == monster_shape
             if np.sum(np.multiply(search_space, sea_monster)) == monster_space:
                 print("found a monster! coords:", r, c)
@@ -214,22 +210,27 @@ def main(input_file):
     tiles_left = [t.num for t in tiles]
     solution = solve(grid, tiles_left, side_length, tiles_dict)
     print(grid)
-    p1 = int(grid[0, 0][0]) \
-         * int(grid[0, side_length - 1][0]) \
-         * int(grid[side_length - 1, 0][0]) \
-         * int(grid[side_length - 1, side_length - 1][0])
+    p1 = (
+        int(grid[0, 0][0])
+        * int(grid[0, side_length - 1][0])
+        * int(grid[side_length - 1, 0][0])
+        * int(grid[side_length - 1, side_length - 1][0])
+    )
 
     img = create_image(grid, side_length, tiles_dict)
     sea_monster = np.array(
-        [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-         [1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1],
-         [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0]])
+        [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+            [1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1],
+            [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0],
+        ]
+    )
     print(img)
     print(img.shape)
     non_monsters = []
     for variation in [np.rot90(img, k=n) for n in range(4)] + [
-        np.rot90(np.fliplr(img), k=n) for n in
-        range(4)]:
+        np.rot90(np.fliplr(img), k=n) for n in range(4)
+    ]:
         non_monsters.append(count_sea(variation, sea_monster))
 
     print("Non monsters", non_monsters)
@@ -249,4 +250,6 @@ def test_samples(self):
 
 if __name__ == "__main__":
     test_samples(TestCase())
-    main("full.txt")
+    p1, p2 = main("full.txt")
+    assert p1 == 107399567124539
+    assert p2 == 1555
