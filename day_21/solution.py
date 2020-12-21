@@ -54,8 +54,6 @@ def main(input_file):
                 did_change = True
                 break
 
-
-
     print(known)
     print(alg_dict)
     print("Food ", food)
@@ -64,9 +62,10 @@ def main(input_file):
     for f in food:
         ings, algs = f
         c += len(set(ings).difference(known_set))
-
     p1 = c
     print(known)
+
+    # part 2
     s = ",".join(dict(sorted(known.items(), key=lambda item: item[1])).keys())
     p2 = s
     print(f"Solution to part 1: {p1}")
