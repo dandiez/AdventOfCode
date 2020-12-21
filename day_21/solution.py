@@ -39,23 +39,23 @@ def main(input_file):
             alg_dict[al].append(set(ing))
     print("alg dict", alg_dict)
 
-    known=dict()
+    known = dict()
 
-    did_change=True
+    did_change = True
     while did_change:
-        did_change=False
+        did_change = False
         for al, ings in alg_dict.items():
             print("checking ", al, ings)
             if al in known.values():
                 print("skipping ", al)
                 continue
             unique = set.intersection(*ings)
-            if len(unique)==1:
+            if len(unique) == 1:
                 print("fund unique:", unique)
                 val = unique.pop()
                 unique.add(val)
-                known[val]=al
-                did_change=True
+                known[val] = al
+                did_change = True
                 break
         if did_change:
             new_alg_dict = dict()
@@ -63,14 +63,14 @@ def main(input_file):
                 new_ings = []
                 for ing_set in ings:
                     new_ings.append(ing_set.difference(unique))
-                new_alg_dict[al]=new_ings
-            alg_dict=new_alg_dict
+                new_alg_dict[al] = new_ings
+            alg_dict = new_alg_dict
 
     print(known)
     print(alg_dict)
-    print("Food ",food)
+    print("Food ", food)
     known_set = set(known.keys())
-    c=0
+    c = 0
     for f in food:
         ings, algs = f
         c += len(set(ings).difference(known_set))
@@ -87,8 +87,8 @@ def main(input_file):
 def test_samples(self):
     input_file = "sample_1.txt"
     p1, p2 = main(input_file)
-    self.assertEqual( 5, p1)
-    self.assertEqual("mxmxvkd,sqjhc,fvjkl" , p2)
+    self.assertEqual(5, p1)
+    self.assertEqual("mxmxvkd,sqjhc,fvjkl", p2)
     print("***Tests passed so far***")
 
 
