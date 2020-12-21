@@ -33,14 +33,10 @@ def main(input_file):
     alg_dict = defaultdict(list)
     for f in food:
         ing, alg = f
-        print(ing)
-        print(alg)
         for al in alg:
             alg_dict[al].append(set(ing))
-    print("alg dict", alg_dict)
 
     known = dict()
-
     did_change = True
     while did_change:
         did_change = False
