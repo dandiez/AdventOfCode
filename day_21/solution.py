@@ -52,15 +52,13 @@ def main(input_file):
             unique = set.intersection(*ings)
             if len(unique) == 1:
                 print("fund unique:", unique)
-                val = unique.pop()
-                unique.add(val)
-                known[val] = al
+                for _, ings in alg_dict.items():
+                    for ing_set in ings:
+                        ing_set.difference_update(unique)
+                known[unique.pop()] = al
                 did_change = True
                 break
-        if did_change:
-            for al, ings in alg_dict.items():
-                for ing_set in ings:
-                    ing_set.difference_update(unique)
+
 
 
     print(known)
