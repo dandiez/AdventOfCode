@@ -94,4 +94,6 @@ def test_samples(self):
 
 if __name__ == "__main__":
     test_samples(TestCase())
-    main("full.txt")
+    p1, p2 = main("full.txt")
+    assert p1 == 2176
+    assert p2 == "lvv,xblchx,tr,gzvsg,jlsqx,fnntr,pmz,csqc"
