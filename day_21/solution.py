@@ -76,7 +76,9 @@ def main(input_file):
         c += len(set(ings).difference(known_set))
 
     p1 = c
-    p2 = None
+    print(known)
+    s = ",".join(dict(sorted(known.items(), key=lambda item: item[1])).keys())
+    p2 = s
     print(f"Solution to part 1: {p1}")
     print(f"Solution to part 2: {p2}")
     return p1, p2
@@ -86,7 +88,7 @@ def test_samples(self):
     input_file = "sample_1.txt"
     p1, p2 = main(input_file)
     self.assertEqual( 5, p1)
-    # self.assertEqual( , p2)
+    self.assertEqual("mxmxvkd,sqjhc,fvjkl" , p2)
     print("***Tests passed so far***")
 
 
