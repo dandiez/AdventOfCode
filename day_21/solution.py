@@ -47,7 +47,6 @@ def main(input_file):
         for al, ings in alg_dict.items():
             print("checking ", al, ings)
             if al in known.values():
-                print("skipping ", al)
                 continue
             unique = set.intersection(*ings)
             if len(unique) == 1:
