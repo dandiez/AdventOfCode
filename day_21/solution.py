@@ -58,13 +58,10 @@ def main(input_file):
                 did_change = True
                 break
         if did_change:
-            new_alg_dict = dict()
             for al, ings in alg_dict.items():
-                new_ings = []
                 for ing_set in ings:
-                    new_ings.append(ing_set.difference(unique))
-                new_alg_dict[al] = new_ings
-            alg_dict = new_alg_dict
+                    ing_set.difference_update(unique)
+
 
     print(known)
     print(alg_dict)
