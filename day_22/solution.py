@@ -13,13 +13,10 @@ from unittest import TestCase
 def read_input(filename="input.txt"):
     with open(filename) as f:
         top, bottom = f.read().split("\n\n")
-
     _, nums1 = top.split("Player 1:\n")
     nums1 = [int(n) for n in nums1.splitlines() if n.strip()]
     _, nums2 = bottom.split("Player 2:\n")
-
     nums2 = [int(n.strip()) for n in nums2.splitlines() if n.strip()]
-
     return nums1, nums2
 
 
