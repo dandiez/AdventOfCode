@@ -23,7 +23,7 @@ def read_input(filename="input.txt"):
     return nums1, nums2
 
 
-def player_1_wins_game(nums1, nums2, is_rec=False):
+def player_1_wins_game(nums1, nums2):
     print("playing with ", nums1, nums2)
     nums1 = nums1[:]
     nums2 = nums2[:]
@@ -39,13 +39,13 @@ def player_1_wins_game(nums1, nums2, is_rec=False):
         player_1_wins = None
         a, b = nums1[0], nums2[0]
         if (a <= (len(nums1) - 1)) and (b <= (len(nums2) - 1)):
-            print("Recursing!", nums1, nums2)
+            #print("Recursing!", nums1, nums2)
             _, _, player_1_wins = player_1_wins_game(nums1[1:a + 1], nums2[1:b + 1])
         else:
-            print("not recursing")
-            if a>b:
+            #print("not recursing")
+            if a > b:
                 player_1_wins = True
-            elif b>a:
+            elif b > a:
                 player_1_wins = False
             else:
                 print("Draw")
@@ -64,8 +64,7 @@ def player_1_wins_game(nums1, nums2, is_rec=False):
             nums2.extend([b, a])
             nums1 = nums1[1:]
 
-    return nums1, nums2, len(nums1)>len(nums2)
-
+    return nums1, nums2, len(nums1) > len(nums2)
 
 
 def main(input_file):
