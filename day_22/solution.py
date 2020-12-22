@@ -23,7 +23,7 @@ def read_input(filename="input.txt"):
     return nums1, nums2
 
 
-def player_1_wins_game(nums1, nums2):
+def player_1_wins_game(nums1, nums2, is_part_1=True):
     print("playing with ", nums1, nums2)
     nums1 = nums1[:]
     nums2 = nums2[:]
@@ -38,7 +38,7 @@ def player_1_wins_game(nums1, nums2):
 
         player_1_wins = None
         a, b = nums1[0], nums2[0]
-        if (a <= (len(nums1) - 1)) and (b <= (len(nums2) - 1)):
+        if (a <= (len(nums1) - 1)) and (b <= (len(nums2) - 1)) and not is_part_1:
             #print("Recursing!", nums1, nums2)
             _, _, player_1_wins = player_1_wins_game(nums1[1:a + 1], nums2[1:b + 1])
         else:
@@ -71,13 +71,17 @@ def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
     # part 1
     nums1, nums2 = read_input(input_file)
-    nums1, nums2, p_1_wins = player_1_wins_game(nums1, nums2)
-
-    print(nums1)
-    print(nums2)
+    nums1, nums2, p_1_wins = player_1_wins_game(nums1, nums2, is_part_1=True)
     win_list = nums1 + nums2
     score = sum(n * i for n, i in zip(win_list, range(len(win_list), 0, -1)))
-    p1 = None
+    p1 = score
+
+
+    # part 2
+    nums1, nums2 = read_input(input_file)
+    nums1, nums2, p_1_wins = player_1_wins_game(nums1, nums2, is_part_1=False)
+    win_list = nums1 + nums2
+    score = sum(n * i for n, i in zip(win_list, range(len(win_list), 0, -1)))
     p2 = score
     print(f"Solution to part 1: {p1}")
     print(f"Solution to part 2: {p2}")
@@ -87,11 +91,13 @@ def main(input_file):
 def test_samples(self):
     input_file = "sample_1.txt"
     p1, p2 = main(input_file)
-    # self.assertEqual(306, p1)
+    self.assertEqual(306, p1)
     self.assertEqual(291, p2)
     print("***Tests passed so far***")
 
 
 if __name__ == "__main__":
     test_samples(TestCase())
-    main("full.txt")
+    p1, p2 = main("full.txt")
+    assert p1 == 33434
+    assert p2 == 31657
