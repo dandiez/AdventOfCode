@@ -1,3 +1,4 @@
+import functools
 from unittest import TestCase
 
 import lark
@@ -23,12 +24,12 @@ def read_input(filename="input.txt"):
     class TransformPaths(lark.Transformer):
         start = list
         path = list
-        se = lambda self, items: np.array((1, -1))
-        sw = lambda self, items: np.array((0, -1))
-        ne = lambda self, items: np.array((0, 1))
-        nw = lambda self, items: np.array((-1, 1))
-        w = lambda self, items: np.array((-1, 0))
-        e = lambda self, items: np.array((1, 0))
+        se = lambda *_: np.array((1, -1))
+        sw = lambda *_: np.array((0, -1))
+        ne = lambda *_: np.array((0, 1))
+        nw = lambda *_: np.array((-1, 1))
+        w = lambda *_: np.array((-1, 0))
+        e = lambda *_: np.array((1, 0))
 
     parser = lark.Lark(grammar)
     data = []
@@ -41,16 +42,17 @@ def read_input(filename="input.txt"):
     return data
 
 
-import functools
-
-
 @functools.lru_cache(None)
 def get_neighbours(tile):
     tile = np.array(tile)
-    deltas = [np.array((1, -1)), np.array((0, -1)),
-              np.array((0, 1)), np.array((-1, 1))
-        , np.array((-1, 0))
-        , np.array((1, 0))]
+    deltas = [
+        np.array((1, -1)),
+        np.array((0, -1)),
+        np.array((0, 1)),
+        np.array((-1, 1)),
+        np.array((-1, 0)),
+        np.array((1, 0)),
+    ]
     return {tuple(tile + d) for d in deltas}
 
 
@@ -59,14 +61,14 @@ def run_iteration(tiles):
     all_tiles = set()
     for t in tiles:
         n = get_neighbours(t)
-        all_tiles = all_tiles.union(n)
+        all_tiles.update(n)
 
     for t in all_tiles:
         n = get_neighbours(t)
         number_of_black_neighbours = len(tiles.intersection(n))
         if t in tiles:
             # is black
-            if (number_of_black_neighbours == 0 or number_of_black_neighbours > 2):
+            if number_of_black_neighbours == 0 or number_of_black_neighbours > 2:
                 pass
             else:
                 new_tiles.add(t)
@@ -81,7 +83,6 @@ def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
     # part 1
     data = read_input(input_file)
-    # print(f"Data contains {len(data)} paths")
     tiles = []
     for p in data:
         tile = tuple(sum(p))
@@ -98,7 +99,8 @@ def main(input_file):
     for day in range(1, 100 + 1):
         tiles = run_iteration(tiles)
         p2 = len(tiles)
-        print(f"Day {day}: {p2}")
+        if day % 10 == 0 or day <= 10:
+            print(f"Day {day}: {p2}")
 
     print(f"Solution to part 1: {p1}")
     print(f"Solution to part 2: {p2}")
@@ -115,4 +117,6 @@ def test_samples(self):
 
 if __name__ == "__main__":
     test_samples(TestCase())
-    main("full.txt")
+    p1, p2 = main("full.txt")
+    assert p1 == 244
+    assert p2 == 3665
