@@ -40,7 +40,10 @@ def read_input(filename="input.txt"):
         data.append(d)
     return data
 
+
 import functools
+
+
 @functools.lru_cache(None)
 def get_neighbours(tile):
     tile = np.array(tile)
@@ -48,11 +51,10 @@ def get_neighbours(tile):
               np.array((0, 1)), np.array((-1, 1))
         , np.array((-1, 0))
         , np.array((1, 0))]
-    return {tuple(tile+d) for d in deltas}
+    return {tuple(tile + d) for d in deltas}
 
 
 def run_iteration(tiles):
-
     new_tiles = set()
     all_tiles = set()
     for t in tiles:
@@ -64,16 +66,15 @@ def run_iteration(tiles):
         number_of_black_neighbours = len(tiles.intersection(n))
         if t in tiles:
             # is black
-            if (number_of_black_neighbours == 0 or number_of_black_neighbours>2):
+            if (number_of_black_neighbours == 0 or number_of_black_neighbours > 2):
                 pass
             else:
                 new_tiles.add(t)
         else:
             # is white
-            if number_of_black_neighbours==2:
+            if number_of_black_neighbours == 2:
                 new_tiles.add(t)
     return new_tiles
-
 
 
 def main(input_file):
@@ -94,7 +95,7 @@ def main(input_file):
     p1 = len(tiles)
     # part 2
     tiles = set(tiles)
-    for day in range(1, 100+1):
+    for day in range(1, 100 + 1):
         tiles = run_iteration(tiles)
         p2 = len(tiles)
         print(f"Day {day}: {p2}")
@@ -108,7 +109,7 @@ def test_samples(self):
     input_file = "sample_1.txt"
     p1, p2 = main(input_file)
     self.assertEqual(10, p1)
-    self.assertEqual(2208 , p2)
+    self.assertEqual(2208, p2)
     print("***Tests passed so far***")
 
 
