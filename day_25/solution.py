@@ -10,7 +10,8 @@ def loop_it_once(sn, num):
 
 MAX_IT = 1000000000
 
-def get_loop_size( pk, sn=7, num=1):
+
+def get_loop_size(pk, sn=7, num=1):
     for loop_size in range(1, MAX_IT + 1):
         num = loop_it_once(sn, num)
         if num == pk:
@@ -21,10 +22,12 @@ def get_loop_size( pk, sn=7, num=1):
             # print(f"pk {pk} does not match {num} for loop size {loop_size}")
     raise Exception("loop size not found")
 
+
 def transform(sn, ls, num=1):
     for n in range(ls):
         num = loop_it_once(sn, num=num)
     return num
+
 
 def main(input):
     """Solve puzzle and connect part 1 with part 2 if needed."""
@@ -55,4 +58,5 @@ def test_samples(self):
 if __name__ == "__main__":
     test_samples(TestCase())
     input = (14788856, 19316454)
-    main(input)
+    p1, p2 = main(input)
+    assert p1 == 545789
