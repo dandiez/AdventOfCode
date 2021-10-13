@@ -6,19 +6,19 @@ def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
     # part 1
     inp = read_input(input_file)
-    p1 = part_1(inp)
+    p1 = part_1(inp, 1)
     print(f"Solution to part 1: {p1}")
 
-    # # part 2
-    # inp = read_input(input_file)
-    # p2 = part_2(inp)
-    # print(f"Solution to part 2: {p2}")
-    # return p1, p2
+    # part 2
+    inp = read_input(input_file)
+    p2 = part_1(inp, 5)
+    print(f"Solution to part 2: {p2}")
+    return p1, p2
 
 
-def part_1(inp):
+def part_1(inp, inp_value):
     computer = IntcodeComputer(inp)
-    computer.set_input(1)
+    computer.set_input(inp_value)
     computer.execute()
     p_1 = computer.outputs[-1]
     return p_1
@@ -85,6 +85,14 @@ class IntcodeComputer:
             self.process_save_input(code)
         elif code.op_code == 4:
             self.process_output(code)
+        elif code.op_code == 5:
+            self.process_jump_if_true(code)
+        elif code.op_code == 6:
+            self.process_jump_if_false(code)
+        elif code.op_code == 7:
+            self.process_less_than(code)
+        elif code.op_code == 8:
+            self.process_equal(code)
         elif code.op_code == 99:
             self.stop = True
         else:
@@ -118,6 +126,22 @@ class IntcodeComputer:
             else:
                 values.append(self.read_and_skip())
         return values
+
+    def process_jump_if_true(self, code):
+        first, second = self.read_n_parameter_values(code, 2)
+        if first != 0:
+            self.position = second
+
+    def process_jump_if_false(self, code):
+        first, second = self.read_n_parameter_values(code, 2)
+        if first == 0:
+            self.position = second
+
+    def process_less_than(self, code):
+        self.process_aritm(code, lambda a, b: int(operator.lt(a, b)))
+
+    def process_equal(self, code):
+        self.process_aritm(code, lambda a, b: int(operator.eq(a, b)))
 
 
 if __name__ == "__main__":
