@@ -1,5 +1,3 @@
-from unittest import TestCase
-
 import numpy as np
 
 
@@ -20,25 +18,29 @@ def main(input_file):
 def read_input(filename="input"):
     with open(filename) as f:
         lines = [line.strip() for line in f.readlines() if line.strip()]
-    inp = [[int(val) for val in line] for line in lines]  # parse here...
+    inp = [int(val) for val in lines[0]]
     return inp
 
 
 def part_1(inp):
+    layered_image = get_layered_image(inp)
+    return get_mult_from_layer_with_least_number_of_zeroes(layered_image)
+
+
+def get_layered_image(inp):
     width = 25
     height = 6
-    images = inp
-    for image_raw in images:
-        flat_image = np.array(image_raw)
-        num_layers = len(flat_image) // width // height
-        layered_image = np.reshape(flat_image, (num_layers, height, width))
-        return get_mult_from_layer_with_least_number_of_zeroes(layered_image)
+    image_raw = inp
+    flat_image = np.array(image_raw)
+    num_layers = len(flat_image) // width // height
+    layered_image = np.reshape(flat_image, (num_layers, height, width))
+    return layered_image
 
 
 def get_mult_from_layer_with_least_number_of_zeroes(layered_image):
     min_num_zeroes = np.inf
     layer_mult = None
-    for n, layer in enumerate(np.rollaxis(layered_image, 0)):
+    for n, layer in enumerate(layered_image):
         unique, counts = np.unique(layer, return_counts=True)
         layer_digits = dict(zip(unique, counts))
         if layer_digits[0] < min_num_zeroes:
@@ -48,20 +50,36 @@ def get_mult_from_layer_with_least_number_of_zeroes(layered_image):
 
 
 def part_2(inp):
-    pass
+    layered_image = get_layered_image(inp)
+    top_layer = layered_image[0]
+    for layer in layered_image:
+        top_layer = flatten_layers(top_layer, layer)
+    render_layer(top_layer)
+    return top_layer
 
 
-def test_sample_1(self):
-    pass
+def flatten_layers(top, bottom):
+    result = top
+    for x in range(top.shape[0]):
+        for y in range(top.shape[1]):
+            result[x][y] = flatten_pixel(top[x][y], bottom[x][y])
+    return result
 
 
-def test_sample_2(self):
-    pass
+def render_layer(layer):
+    chars = {0: '░', 1: '█'}
+    for row in layer:
+        for num in row:
+            print(chars[num], end='')
+        print('')
+
+
+def flatten_pixel(top: int, bottom: int):
+    if top == 2:
+        return bottom
+    return top
 
 
 if __name__ == "__main__":
-    print('*** solving tests ***')
-    test_sample_1(TestCase())
-    test_sample_2(TestCase())
     print('*** solving main ***')
     main("input")
