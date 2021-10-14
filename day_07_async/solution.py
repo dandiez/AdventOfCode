@@ -36,9 +36,6 @@ class IntcodeComputer:
         self.last_output = None
         self.name = name or ''
 
-    def set_input(self, input_to_set: deque):
-        self.input_queue = input_to_set
-
     def read_and_skip(self):
         value = self.memory[self.position]
         self.position += 1
