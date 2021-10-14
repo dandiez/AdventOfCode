@@ -11,7 +11,7 @@ def main(input_file):
 
     # part 2
     inp = read_input(input_file)
-    p2 = part_2(inp)
+    p2 = part_1(inp, is_part_2=True)
     print(f"Solution to part 2: {p2}")
     return p1, p2
 
@@ -23,7 +23,7 @@ def read_input(filename="input.txt"):
     return inp
 
 
-def part_1(inp):
+def part_1(inp, is_part_2=False):
     parent_child = defaultdict(list)
     child_parent = defaultdict(list)
     space_objects = set()
@@ -35,7 +35,27 @@ def part_1(inp):
 
     generations = get_generations(parent_child)
     p1 = sum(generations.values())
-    return p1
+    if not is_part_2:
+        return p1
+    # part 2
+    santas_ancestors = get_ancestors('SAN', child_parent)
+    your_ancestors = get_ancestors('YOU', child_parent)
+    print(santas_ancestors)
+    print(your_ancestors)
+    ancestors_not_in_common = set(santas_ancestors) ^ set(your_ancestors)
+    print(ancestors_not_in_common)
+    return len(ancestors_not_in_common)
+
+
+def get_ancestors(space_object, child_parent):
+    child = space_object
+    parent = None
+    ancestors = []
+    while parent != 'COM':
+        parent = child_parent[child][0]
+        ancestors.append(parent)
+        child = parent
+    return ancestors
 
 
 def get_generations(parent_child):
@@ -59,11 +79,15 @@ def part_2(inp):
 
 
 def test_sample_1(self):
-    p1, p2 = main('sample_1')
+    inp = read_input('sample_1')
+    p1 = part_1(inp)
     self.assertEqual(42, p1)
 
 
 def test_sample_2(self):
+    inp = read_input('sample_2')
+    p2 = part_1(inp, is_part_2=True)
+    self.assertEqual(4, p2)
     pass
 
 
