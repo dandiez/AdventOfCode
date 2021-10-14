@@ -163,8 +163,9 @@ async def main_event_loop(inp, start_value=None):
     return p1
 
 
-async def part_2(inp):
-    return
+def part_2(inp):
+    p2 = asyncio.run(main_event_loop(inp, start_value=2))
+    return p2
 
 
 def read_input(filename):
