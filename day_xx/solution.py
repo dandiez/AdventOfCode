@@ -1,6 +1,19 @@
 
 from unittest import TestCase
 
+def main(input_file):
+    """Solve puzzle and connect part 1 with part 2 if needed."""
+    # part 1
+    inp = read_input(input_file)
+    p1 = part_1(inp)
+    print(p1)
+
+    # part 2
+    inp = read_input(input_file)
+    p2 = part_2(inp)
+    print(p2)
+    return p1, p2
+
 
 def read_input(filename="input.txt"):
     with open(filename) as f:
@@ -16,19 +29,6 @@ def part_1(inp):
 def part_2(inp):
     pass
 
-
-def main(input_file):
-    """Solve puzzle and connect part 1 with part 2 if needed."""
-    # part 1
-    inp = read_input(input_file)
-    p1 = part_1(inp)
-    print(p1)
-
-    # part 2
-    inp = read_input(input_file)
-    p2 = part_2(inp)
-    print(p2)
-    return p1, p2
 
 
 def test_sample_1(self):
