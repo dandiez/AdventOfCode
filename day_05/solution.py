@@ -1,4 +1,5 @@
 import operator
+from collections import deque
 from enum import Enum
 
 
@@ -6,12 +7,12 @@ def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
     # part 1
     inp = read_input(input_file)
-    p1 = part_1(inp, 1)
+    p1 = part_1(inp, deque([1]))
     print(f"Solution to part 1: {p1}")
 
     # part 2
     inp = read_input(input_file)
-    p2 = part_1(inp, 5)
+    p2 = part_1(inp, deque([5]))
     print(f"Solution to part 2: {p2}")
     return p1, p2
 
@@ -55,10 +56,10 @@ class IntcodeComputer:
         self.position = 0
         self.max_cycles = 1000000
         self.stop = False
-        self.input = None
+        self.input = deque()
         self.outputs = list()
 
-    def set_input(self, input_to_set):
+    def set_input(self, input_to_set: deque):
         self.input = input_to_set
 
     def read_and_skip(self):
@@ -99,7 +100,7 @@ class IntcodeComputer:
             raise ValueError(f"Unknown code {code.op_code}")
 
     def process_save_input(self, code):
-        self.memory[self.read_and_skip()] = self.input
+        self.memory[self.read_and_skip()] = self.input.popleft()
 
     def process_output(self, code):
         value = self.read_n_parameter_values(code, 1)[0]
