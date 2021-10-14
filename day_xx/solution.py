@@ -15,7 +15,7 @@ def main(input_file):
     return p1, p2
 
 
-def read_input(filename="input.txt"):
+def read_input(filename="input"):
     with open(filename) as f:
         lines = [line.strip() for line in f.readlines() if line.strip()]
     inp = [int(val) for val in lines]  # parse here...
@@ -40,6 +40,8 @@ def test_sample_2(self):
 
 
 if __name__ == "__main__":
+    print('*** solving tests ***')
     test_sample_1(TestCase())
     test_sample_2(TestCase())
+    print('*** solving main ***')
     main("input")
