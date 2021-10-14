@@ -6,12 +6,12 @@ def main(input_file):
     # part 1
     inp = read_input(input_file)
     p1 = part_1(inp)
-    print(p1)
+    print(f"Solution to part 1: {p1}")
 
     # part 2
     inp = read_input(input_file)
     p2 = part_2(inp)
-    print(p2)
+    print(f"Solution to part 2: {p2}")
     return p1, p2
 
 
