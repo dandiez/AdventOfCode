@@ -58,6 +58,7 @@ class IntcodeComputer:
         self.stop = False
         self.input = deque()
         self.outputs = list()
+        self.is_paused = False
 
     def set_input(self, input_to_set: deque):
         self.input = input_to_set
@@ -68,6 +69,8 @@ class IntcodeComputer:
         return value
 
     def execute(self):
+        self.is_paused = False
+        self.stop = False
         num_cycles = 0
         while num_cycles <= self.max_cycles and not self.stop:
             self.process_instruction()
@@ -100,11 +103,16 @@ class IntcodeComputer:
             raise ValueError(f"Unknown code {code.op_code}")
 
     def process_save_input(self, code):
+        if len(self.input) == 0:
+            self.is_paused = True
+            self.stop = True
+            self.position -= 1
+            return
         self.memory[self.read_and_skip()] = self.input.popleft()
 
     def process_output(self, code):
         value = self.read_n_parameter_values(code, 1)[0]
-        print(value)
+        # print(value)
         self.outputs.append(value)
 
     def process_aritm(self, code, f: callable):
