@@ -152,6 +152,11 @@ class IntcodeComputer:
                 raise ValueError(f'Unknown mode {mode_n}')
         return values
 
+    def get_outputs_as_list(self):
+        outputs = []
+        while not self.output_queue.empty():
+            outputs.append(self.output_queue.get())
+        return outputs
 
 def part_1(inp):
     p1 = main_event_loop(inp, start_value=1)
