@@ -110,6 +110,7 @@ class IntcodeComputer:
         if self.input_queue.empty():
             self.stop = True
             self.paused = True
+            self.position -= 1
             return
         value_to_set = self.input_queue.get()
         # print(f'{self.name}: consuming input {value_to_consume}')
@@ -157,6 +158,9 @@ class IntcodeComputer:
         while not self.output_queue.empty():
             outputs.append(self.output_queue.get())
         return outputs
+
+    def execution_ended(self):
+        return self.stop and not self.paused
 
 def part_1(inp):
     p1 = main_event_loop(inp, start_value=1)
