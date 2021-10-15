@@ -1,4 +1,5 @@
 import dataclasses
+from collections import defaultdict
 from typing import Dict
 from unittest import TestCase
 
@@ -53,11 +54,12 @@ GridColorDict = Dict[Coords, int]
 
 class Robot:
 
-    def __init__(self, computer: IntcodeComputer, starting_position: Coords, starting_orientation: Vector):
+    def __init__(self, computer: IntcodeComputer, starting_position: Coords, starting_orientation: Vector,
+                 starting_color):
         self.computer = computer
         self.current_position = starting_position
         self.current_orientation: Vector = starting_orientation
-        self.painted_panels: GridColorDict = dict()
+        self.painted_panels: GridColorDict = {self.current_position: starting_color}
 
     def get_color_and_turn(self, input_color):
         self.computer.input_queue.put(input_color)
@@ -86,29 +88,47 @@ class Robot:
             return 0
         return self.painted_panels[self.current_position]
 
+    def render_painted_panels(self):
+        render = ''
+        white_panels = defaultdict(int,
+                                   ((coord, color) for coord, color in self.painted_panels.items() if color == 1),
+                                   )
+        min_x = min(coords.x for coords in white_panels.keys())
+        max_x = max(coords.x for coords in white_panels.keys())
+        min_y = min(coords.y for coords in white_panels.keys())
+        max_y = max(coords.y for coords in white_panels.keys())
+        padding = 1
+        for y in reversed(range(min_y - padding, max_y + 1 + padding)):
+            # y is in reversed order because screen_y is -y (prints downwards)
+            for x in range(min_x - padding, max_x + 1 + padding):
+                if Coords(x=x, y=y) in white_panels:
+                    render += "█"
+                else:
+                    render += '░'
+            render += '\n'
+        print(render)
 
-def part_1(inp):
+
+def part_n(inp, part_1=True):
+    if part_1:
+        starting_color = 0
+    else:
+        starting_color = 1
     comp = IntcodeComputer(inp)
-    robot = Robot(comp, Coords(x=0, y=0), UP)
+    robot = Robot(comp, Coords(x=0, y=0), UP, starting_color=starting_color)
     while not robot.computer.execution_ended():
         color, turn = robot.get_color_and_turn(robot.get_color_at_current_position())
         robot.paint(color)
         robot.move_to_new_position(turn)
-
+    robot.render_painted_panels()
     return robot.get_number_of_panels_painted()
 
 
 def part_2(inp):
-    pass
+    return part_n(inp, part_1=False)
 
-
-def test_sample_1(self):
-    pass
-
-
-def test_sample_2(self):
-    pass
-
+def part_1(inp):
+    return part_n(inp)
 
 def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
@@ -125,8 +145,5 @@ def main(input_file):
 
 
 if __name__ == "__main__":
-    print('*** solving tests ***')
-    test_sample_1(TestCase())
-    test_sample_2(TestCase())
     print('*** solving main ***')
     main("input")
