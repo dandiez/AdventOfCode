@@ -1,4 +1,5 @@
 import itertools
+from math import lcm
 from typing import List
 from unittest import TestCase
 
@@ -18,7 +19,7 @@ def read_input(filename="input"):
 
 class Body:
     def __init__(
-        self, initial_position: Vector3D, initial_velocity: Vector3D, name: str
+            self, initial_position: Vector3D, initial_velocity: Vector3D, name: str
     ):
         self.pos = initial_position
         self.vel = initial_velocity
@@ -47,6 +48,11 @@ class System:
     def __init__(self, bodies: List[Body]):
         self.bodies = bodies
         self.age = 0
+        self.previous_states = set(self.get_system_state())
+
+    def get_system_state(self):
+        state = tuple((tuple(body.pos), tuple(body.vel)) for body in self.bodies)
+        return state
 
     def __repr__(self):
         _repr = ""
@@ -57,10 +63,17 @@ class System:
     def simulate(self, number_of_steps):
         target_age = self.age + number_of_steps
         for self.age in range(self.age, target_age + 1):
-            print(f"Energy after {self.age} steps: {self.get_total_energy()}")
-            print(self)
+            # print(f"Energy after {self.age} steps: {self.get_total_energy()}")
+            # print(self)
             if self.age < target_age:
                 self.update_system()
+            state = self.get_system_state()
+            if state in self.previous_states:
+                print(f"Repeated state after {self.age} steps")
+                return
+            if self.age % 100000 == 0:
+                print(f"age is {self.age}")
+            self.previous_states.add(state)
 
     def get_total_energy(self):
         return sum(body.total_energy for body in self.bodies)
@@ -85,24 +98,45 @@ class System:
 
 
 def part_1(inp, number_of_steps=1000):
+    return part_n(inp, number_of_steps=number_of_steps)
+
+
+def part_n(inp, number_of_steps=1000, is_part_1=True, dimension=None):
+    if dimension is None:
+        factor = np.array((1, 1, 1))
+    elif dimension == 0:
+        factor = np.array((1, 0, 0))
+    elif dimension == 1:
+        factor = np.array((0, 1, 0))
+    elif dimension == 2:
+        factor = np.array((0, 0, 1))
+    else:
+        raise ValueError()
+
     moon_names = ("Io", "Europa", "Ganymede", "Callisto")
     the_system = System(
         [
-            Body(np.array(loc), np.array((0, 0, 0)), name)
+            Body(np.array(loc) * factor, np.array((0, 0, 0)), name)
             for (loc, name) in zip(inp, moon_names)
         ]
     )
     the_system.simulate(number_of_steps)
-    return the_system.get_total_energy()
+    if is_part_1:
+        return the_system.get_total_energy()
+    return the_system.age
 
 
 def part_2(inp):
-    pass
+    cycle_x = part_n(inp, number_of_steps=10000000000000, is_part_1=False, dimension=0)
+    cycle_y = part_n(inp, number_of_steps=10000000000000, is_part_1=False, dimension=1)
+    cycle_z = part_n(inp, number_of_steps=10000000000000, is_part_1=False, dimension=2)
+    return lcm(cycle_x, cycle_y, cycle_z)
 
 
 def test_sample_1(self):
     inp = read_input("sample_1")
     self.assertEqual(179, part_1(inp, number_of_steps=10))
+    self.assertEqual(2772, part_2(inp))
 
 
 def test_sample_2(self):
