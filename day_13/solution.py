@@ -2,7 +2,7 @@ import asyncio
 import dataclasses
 from asyncio import Queue
 from enum import Enum
-from typing import Iterable, Tuple, Dict
+from typing import Iterable, Tuple, Dict, List
 
 from day_09.solution import IntcodeComputer
 
@@ -91,6 +91,13 @@ class ScreenData:
         return limits
 
 
+class GameState:
+
+    def __init__(self):
+        self.screen_data: ScreenData = ScreenData()
+        self.score: int = -1
+
+
 class ScreenASCIIRender:
     tile_chars = {
         TilesType.EMPTY: '░',
@@ -102,10 +109,10 @@ class ScreenASCIIRender:
     unknown_char = '?'
 
     @classmethod
-    def render(cls, screen_data: ScreenData, score):
-        render: str = f"score: {score}\n"
-        tiles_as_dict = screen_data.get_tiles_as_dict()
-        limits = screen_data.get_min_max_tile_coords(tiles_as_dict.keys())
+    def render(cls, game_state: GameState):
+        render: str = f"score: {game_state.score}\n"
+        tiles_as_dict = game_state.screen_data.get_tiles_as_dict()
+        limits = game_state.screen_data.get_min_max_tile_coords(tiles_as_dict.keys())
         for y in limits.y_range():
             for x in limits.x_range():
                 tile = tiles_as_dict.get((x, y), None)
@@ -115,63 +122,101 @@ class ScreenASCIIRender:
         print(render)
         return render
 
+    @classmethod
+    async def render_loop(cls, game_state: GameState, refresh_time_in_seconds=2):
+        print("Starting ASCII render loop...")
+        while True:
+            cls.render(game_state)
+            await asyncio.sleep(refresh_time_in_seconds)
+
 
 class Arcade:
 
     def __init__(self, computer_inp):
         self.computer = IntcodeComputer(computer_inp)
-        self.screen = ScreenData()
-        self.score: int = -1
+        self.game_state = GameState()
 
-    async def update_screen(self):
+    async def switch_on(self, is_part_2=True):
+        print("Arcade is being switched on...")
+        if is_part_2:
+            # Bypass coin
+            print("Apply coin patch...")
+            self.computer.memory[0] = 2
+        update_screen_task = asyncio.create_task(self.update_screen_data())
+        print("Execute computer...")
+        await self.computer.execute()
+        print("Execution finished")
+        print("Emptying output queue...")
         while not self.computer.output_queue.empty():
+            await asyncio.sleep(0.01)
+        print("Output queue is empty.")
+
+    async def update_screen_data(self):
+        print("Update screen data started...")
+        while True:  # not self.computer.output_queue.empty():
             x = await self.computer.output_queue.get()
             y = await self.computer.output_queue.get()
             int_id = await self.computer.output_queue.get()
             if (x, y) == (-1, 0):
-                self.score = int_id
+                self.game_state.score = int_id
             else:
                 tile_id = TilesType(int_id)
-                self.screen.add_tile(Tile(x, y, tile_id))
+                self.game_state.screen_data.add_tile(Tile(x, y, tile_id))
 
 
 async def main_loop_part_1(inp):
     arcade = Arcade(inp)
-    await arcade.computer.execute()
-    await arcade.update_screen()
-    p1 = sum(tile.properties.tile_type is TilesType.BLOCK for tile in arcade.screen.get_tiles_as_dict().values())
-    ScreenASCIIRender.render(arcade.screen, arcade.score)
+    await arcade.switch_on(is_part_2=False)
+    p1 = sum(tile.properties.tile_type is TilesType.BLOCK for tile in
+             arcade.game_state.screen_data.get_tiles_as_dict().values())
+    ScreenASCIIRender.render(arcade.game_state)
     return p1
 
 
 async def main_loop_part_2(inp):
+    AI_GAMER_INPUT_TIME_DELTA_IN_SECONDS = 0.01
+    REFRESH_SCREEN_TIME_DELTA_IN_SECONDS = 1
+
     arcade = Arcade(inp)
-    arcade.computer.memory[0] = 2
-    await arcade.computer.input_queue.put(0)
-    for cycle in range(30000):
-        await arcade.computer.execute()
-        await arcade.update_screen()
-        # ScreenASCIIRender.render(arcade.screen, arcade.score)
-        await GamerAI.make_next_move(arcade.screen, arcade.computer.input_queue)
-        if TilesType.BLOCK not in {tile.properties.tile_type for tile in arcade.screen.tiles.values()}:
-            ScreenASCIIRender.render(arcade.screen, arcade.score)
-            return arcade.score
-        if cycle % 1000 == 0:
-            print(f"Score: {arcade.score}")
+    task_arcade_computer = asyncio.create_task(arcade.switch_on(is_part_2=True))
+    task_player = asyncio.create_task(GamerAI.loop(arcade.game_state.screen_data, arcade.computer.input_queue,
+                                                   refresh_time_in_seconds=AI_GAMER_INPUT_TIME_DELTA_IN_SECONDS))
+    task_render = asyncio.create_task(
+        ScreenASCIIRender.render_loop(arcade.game_state, refresh_time_in_seconds=REFRESH_SCREEN_TIME_DELTA_IN_SECONDS))
+    await task_arcade_computer
+    return arcade.game_state.score
 
 
 class GamerAI:
 
     @staticmethod
     async def make_next_move(screen: ScreenData, move_queue: Queue):
-        ball_tile: Tile = [tile for tile in screen.tiles.values() if tile.properties.tile_type is TilesType.BALL][0]
-        paddle_tile: Tile = [tile for tile in screen.tiles.values() if tile.properties.tile_type is TilesType.PADDLE][0]
+        ball_tiles: List[Tile] = [tile for tile in screen.tiles.values() if tile.properties.tile_type is TilesType.BALL]
+        paddle_tiles: List[Tile] = [tile for tile in screen.tiles.values() if
+                                    tile.properties.tile_type is TilesType.PADDLE]
+        if not ball_tiles or not paddle_tiles:
+            print("No data")
+            joystick_input = 0
+        else:
+            joystick_input = GamerAI.get_joystick_position(ball_tiles[0], paddle_tiles[0])
+        # print(f"GamerAI: {joystick_input}")
+        await move_queue.put(joystick_input)
+
+    @staticmethod
+    def get_joystick_position(ball_tile: Tile, paddle_tile: Tile):
         delta_x = ball_tile.location.x - paddle_tile.location.x
         if delta_x == 0:
             joystick_input = 0
         else:
             joystick_input = delta_x // abs(delta_x)
-        await move_queue.put(joystick_input)
+        return joystick_input
+
+    @classmethod
+    async def loop(cls, screen: ScreenData, move_queue: Queue, refresh_time_in_seconds=0.01):
+        print("Gamer AI started")
+        while True:
+            await cls.make_next_move(screen, move_queue)
+            await asyncio.sleep(refresh_time_in_seconds)
 
 
 def part_1(inp):

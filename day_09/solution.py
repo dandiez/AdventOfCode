@@ -106,6 +106,7 @@ class IntcodeComputer:
             self.position = second
 
     async def process_consume_input(self, code):
+        # print("Waiting for input...")
         value_to_set = await self.input_queue.get()
         # print(f'{self.name}: consuming input {value_to_consume}')
         output_mode = code.get_n_mode(0)
