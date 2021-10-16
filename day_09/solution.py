@@ -35,7 +35,6 @@ class IntcodeComputer:
         self.last_output = None
         self.name = name or ''
         self.relative_base = 0
-        self.paused = False
 
     @staticmethod
     def memory_as_dict(memory):
@@ -51,7 +50,6 @@ class IntcodeComputer:
 
     async def execute(self):
         self.stop = False
-        self.paused = False
         num_cycles = 0
         while num_cycles <= self.max_cycles and not self.stop:
             await self.process_instruction()
@@ -108,11 +106,6 @@ class IntcodeComputer:
             self.position = second
 
     async def process_consume_input(self, code):
-        if self.input_queue.empty():
-            self.paused = True
-            self.stop = True
-            self.position -= 1
-            return
         value_to_set = await self.input_queue.get()
         # print(f'{self.name}: consuming input {value_to_consume}')
         output_mode = code.get_n_mode(0)
@@ -154,8 +147,6 @@ class IntcodeComputer:
                 raise ValueError(f'Unknown mode {mode_n}')
         return values
 
-    def execution_ended(self):
-        return self.stop and not self.paused
 
 def part_1(inp):
     p1 = asyncio.run(main_event_loop(inp, start_value=1))
