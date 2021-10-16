@@ -1,8 +1,8 @@
 import asyncio
 import dataclasses
+from asyncio import Queue
 from enum import Enum
 from typing import Iterable, Tuple, Dict
-from unittest import TestCase
 
 from day_09.solution import IntcodeComputer
 
@@ -72,19 +72,13 @@ class CoordLimits:
 class ScreenData:
 
     def __init__(self):
-        self.tiles = []
+        self.tiles = dict()
 
     def add_tile(self, tile: Tile):
-        self.tiles.append(tile)
-
-    def clear(self):
-        self.tiles.clear()
-
-    def render(self):
-        print(self.tiles)
+        self.tiles[(tile.location.x, tile.location.y)] = tile
 
     def get_tiles_as_dict(self) -> Dict[Tuple[int, int], Tile]:
-        return {(tile.location.x, tile.location.y): tile for tile in self.tiles}
+        return self.tiles
 
     @staticmethod
     def get_min_max_tile_coords(tile_coords: Iterable[Tuple[int, int]]):
@@ -108,12 +102,12 @@ class ScreenASCIIRender:
     unknown_char = '?'
 
     @classmethod
-    def render(cls, screen_data: ScreenData):
-        render: str = ""
+    def render(cls, screen_data: ScreenData, score):
+        render: str = f"score: {score}\n"
         tiles_as_dict = screen_data.get_tiles_as_dict()
         limits = screen_data.get_min_max_tile_coords(tiles_as_dict.keys())
-        for x in limits.x_range():
-            for y in limits.y_range():
+        for y in limits.y_range():
+            for x in limits.x_range():
                 tile = tiles_as_dict.get((x, y), None)
                 char = cls.tile_chars.get(tile.properties.tile_type, cls.unknown_char)
                 render += char
@@ -127,47 +121,67 @@ class Arcade:
     def __init__(self, computer_inp):
         self.computer = IntcodeComputer(computer_inp)
         self.screen = ScreenData()
-
-    async def run_once(self):
-        await self.computer.execute()
+        self.score: int = -1
 
     async def update_screen(self):
         while not self.computer.output_queue.empty():
             x = await self.computer.output_queue.get()
             y = await self.computer.output_queue.get()
             int_id = await self.computer.output_queue.get()
-            tile_id = TilesType(int_id)
-            self.screen.add_tile(Tile(x, y, tile_id))
+            if (x, y) == (-1, 0):
+                self.score = int_id
+            else:
+                tile_id = TilesType(int_id)
+                self.screen.add_tile(Tile(x, y, tile_id))
 
 
-async def main_loop(inp):
+async def main_loop_part_1(inp):
     arcade = Arcade(inp)
-    await arcade.run_once()
+    await arcade.computer.execute()
     await arcade.update_screen()
     p1 = sum(tile.properties.tile_type is TilesType.BLOCK for tile in arcade.screen.get_tiles_as_dict().values())
-    ScreenASCIIRender.render(arcade.screen)
+    ScreenASCIIRender.render(arcade.screen, arcade.score)
     return p1
 
 
+async def main_loop_part_2(inp):
+    arcade = Arcade(inp)
+    arcade.computer.memory[0] = 2
+    await arcade.computer.input_queue.put(0)
+    for cycle in range(30000):
+        await arcade.computer.execute()
+        await arcade.update_screen()
+        # ScreenASCIIRender.render(arcade.screen, arcade.score)
+        await GamerAI.make_next_move(arcade.screen, arcade.computer.input_queue)
+        if TilesType.BLOCK not in {tile.properties.tile_type for tile in arcade.screen.tiles.values()}:
+            ScreenASCIIRender.render(arcade.screen, arcade.score)
+            return arcade.score
+        if cycle % 1000 == 0:
+            print(f"Score: {arcade.score}")
+
+
+class GamerAI:
+
+    @staticmethod
+    async def make_next_move(screen: ScreenData, move_queue: Queue):
+        ball_tile: Tile = [tile for tile in screen.tiles.values() if tile.properties.tile_type is TilesType.BALL][0]
+        paddle_tile: Tile = [tile for tile in screen.tiles.values() if tile.properties.tile_type is TilesType.PADDLE][0]
+        delta_x = ball_tile.location.x - paddle_tile.location.x
+        if delta_x == 0:
+            joystick_input = 0
+        else:
+            joystick_input = delta_x // abs(delta_x)
+        await move_queue.put(joystick_input)
+
+
 def part_1(inp):
-    return asyncio.run(main_loop(inp))
+    return asyncio.run(main_loop_part_1(inp))
 
 
 def part_2(inp):
-    pass
-
-
-def test_sample_1(self):
-    pass
-
-
-def test_sample_2(self):
-    pass
+    return asyncio.run(main_loop_part_2(inp))
 
 
 if __name__ == "__main__":
-    print('*** solving tests ***')
-    test_sample_1(TestCase())
-    test_sample_2(TestCase())
     print('*** solving main ***')
     main("input")
