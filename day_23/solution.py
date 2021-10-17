@@ -64,8 +64,8 @@ class Network:
     async def package_sender(self):
         logger.debug("Started package sender")
         while True:
-            # need small sleep or otherwise it deadlocks
-            await asyncio.sleep(0.00001)
+            # need sleep or otherwise it deadlocks
+            await asyncio.sleep(0)
             await self.forward_ready_packages_to_destination()
             await self.feed_computers_with_empty_input_queues()
 
@@ -76,17 +76,16 @@ class Network:
             if package.destination == 255:
                 await self.part_1_answer.put(package.y)
                 self.last_package_255 = package
+            elif package.destination in self.computers:
+                await self.computers[package.destination].input_queue.put(package.x)
+                await self.computers[package.destination].input_queue.put(package.y)
             else:
-                try:
-                    await self.computers[package.destination].input_queue.put(package.x)
-                    await self.computers[package.destination].input_queue.put(package.y)
-                except KeyError:
-                    logger.error(f"Unknown destination {package.destination}")
+                logger.error(f"Unknown destination {package.destination}")
 
     async def nat(self):
         sent_y_values = set()
         while True:
-            await asyncio.sleep(0.0001)
+            await asyncio.sleep(0)
             if self.full_packages_queue.empty():
                 # wait a bit to see if network is really idle...
                 await asyncio.sleep(0.1)
