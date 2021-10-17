@@ -18,12 +18,8 @@ def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
     # part 1
     inp = read_input(input_file)
-    p1 = part_1(inp)
+    p1, p2 = part_1_and_2(inp)
     print(f"Solution to part 1: {p1}")
-
-    # part 2
-    inp = read_input(input_file)
-    p2 = part_2(inp)
     print(f"Solution to part 2: {p2}")
     return p1, p2
 
@@ -238,16 +234,15 @@ class ExplorerAI:
             droid.move_and_get_feedback(opposite(direction))
 
 
-def part_1(inp):
+def part_1_and_2(inp):
     _map = Map()
     droid = RepairDroid(inp)
     ExplorerAI.map_out_whole_area(_map, droid)
     shortest_path = ExplorerAI.find_shortest_sequence_of_directions_to_get_to_oxygen(_map, droid)
-    return len(list(shortest_path))
-
-
-def part_2(inp):
-    pass
+    p1 = len(list(shortest_path))
+    shortest_path_to_any = nx.single_source_shortest_path_length(_map.graph, (12, -12))
+    p2 = max(shortest_path_to_any.values())
+    return p1, p2
 
 
 if __name__ == "__main__":
