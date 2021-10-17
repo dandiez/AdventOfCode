@@ -92,9 +92,9 @@ class Network:
                 await asyncio.sleep(0.1)
                 if self.full_packages_queue.empty():
                     package_to_send: Package = self.last_package_255
-                    package_to_send.destination = 0
                     if package_to_send is None:
                         continue
+                    package_to_send.destination = 0
                     if package_to_send.y in sent_y_values:
                         await self.part_2_answer.put(package_to_send.y)
                     else:
