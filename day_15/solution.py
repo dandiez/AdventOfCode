@@ -47,7 +47,7 @@ class RepairDroid:
     def __init__(self, inp):
         self.position = (0, 0)
         self.computer = IntcodeComputer(inp)
-        #self.path_taken_thus_far = []
+        # self.path_taken_thus_far = []
 
     def move_and_get_feedback(self, direction):
         self.computer.input_queue.put(direction)
@@ -57,21 +57,6 @@ class RepairDroid:
             # self.update_directions_thus_far(direction)
             self.position = Map.get_neighbour_cell(self.position, direction)
         return feedback
-
-    # def update_directions_thus_far(self, direction):
-    #     if not self.path_taken_thus_far:
-    #         self.path_taken_thus_far.append(direction)
-    #         return
-    #     if self.path_taken_thus_far[-1] == opposite(direction):
-    #         self.path_taken_thus_far.pop()
-    #     else:
-    #         self.path_taken_thus_far.append(direction)
-    #
-    # def go_back_to_start(self):
-    #     while self.path_taken_thus_far:
-    #         last_direction = self.path_taken_thus_far[-1]
-    #         self.move_and_get_feedback(opposite(last_direction))
-    #     assert self.position == (0, 0)
 
     def follow_directions(self, directions: Iterable[Direction]):
         for direction in directions:
@@ -83,11 +68,17 @@ class TileType(Enum):
     WALL = 1
     OXYGEN = 2
 
+
 ascii_mapping = {
     TileType.FREE: ".",
     TileType.WALL: "#",
     TileType.OXYGEN: "*",
 }
+
+
+def distance(a, b):
+    return abs(b[0] - a[0]) + abs(b[1] - a[1])
+
 
 class Map:
     def __init__(self):
@@ -100,14 +91,17 @@ class Map:
     def show_as_ascii(self):
         ascii_str = self.grid.render_ascii(lambda x: ascii_mapping[x], "?")
         print(ascii_str)
+
+    def plot_it(self, animate_pause=None):
+        self.grid.display_as_plot(lambda x: x.value, animate_pause=animate_pause)
+
     def add_tile(self, tile_coords, tile_type):
-        self.known_tiles[tile_coords]=tile_type
+        self.known_tiles[tile_coords] = tile_type
         if tile_type is not TileType.WALL:
             self.graph.add_node(tile_coords)
             for other_tile in self.get_neighbouring_tile_coords(tile_coords):
                 if other_tile in self.graph.nodes:
-                    self.graph.add_edge( other_tile, tile_coords )
-
+                    self.graph.add_edge(other_tile, tile_coords)
 
     def all_tiles_have_known_neighbours(self):
         for tile_coords in self.known_tiles:
@@ -132,27 +126,40 @@ class Map:
         if direction == 4:
             return (center[0] + 1, center[1])
 
-    def get_next_tile_with_unknown_neighbours(self):
-        for tile_coords, tile in self.known_tiles.items():
-            if tile is tile.WALL:
-                continue
-            for neighbour in self.get_neighbouring_tile_coords(tile_coords):
-                if neighbour not in self.known_tiles:
-                    return tile_coords
+    def get_next_tile_with_unknown_neighbours(self, current_position):
+        cells_to_explore = {
+            coords: distance(coords, current_position)
+            for coords, tile_type in self.known_tiles.items()
+            if tile_type is not TileType.WALL
+            and self.cell_has_unknown_neighbours(coords)
+        }
+        if not cells_to_explore:
+            return None
+        min_distance = min(cells_to_explore.values())
+        for cell, _distance in cells_to_explore.items():
+            if _distance == min_distance:
+                return cell
         return None
 
+    def cell_has_unknown_neighbours(self, cell_coords):
+        for neighbour in self.get_neighbouring_tile_coords(cell_coords):
+            if neighbour not in self.known_tiles:
+                return True
+        return False
 
     def display_graph(self):
         nx.draw(self.graph)
         plt.show()
 
+
 class ExplorerAI:
     @classmethod
     def map_out_whole_area(cls, _map: Map, droid: RepairDroid):
-        while True: # not _map.all_tiles_have_known_neighbours():
+        while True:  # not _map.all_tiles_have_known_neighbours():
             # _map.show_as_ascii()
             # print(f"Current map {_map.display_graph()}")
-            destination = _map.get_next_tile_with_unknown_neighbours()
+            _map.plot_it(0.0001)
+            destination = _map.get_next_tile_with_unknown_neighbours(droid.position)
             # print(f"Going to map cell {destination}")
             if destination is None:
                 break
@@ -162,14 +169,18 @@ class ExplorerAI:
                 _map.show_as_ascii()
         print("Mapped area")
         _map.show_as_ascii()
-
+        _map.plot_it(animate_pause=10)
 
     @classmethod
     def find_shortest_sequence_of_directions_to_get_to_oxygen(
         cls, _map: Map, droid: RepairDroid
     ) -> Iterable[Direction]:
-        oxygen_tile_coords = [coord for coord, tile_type in _map.known_tiles.items() if tile_type is TileType.OXYGEN][0]
-        return cls.get_directions_from_cell_to_cell(_map, (0, 0), oxygen_tile_coords )
+        oxygen_tile_coords = [
+            coord
+            for coord, tile_type in _map.known_tiles.items()
+            if tile_type is TileType.OXYGEN
+        ][0]
+        return cls.get_directions_from_cell_to_cell(_map, (0, 0), oxygen_tile_coords)
 
     @classmethod
     def move_drone_to_destination(
@@ -180,11 +191,13 @@ class ExplorerAI:
         origin = droid.position
         if origin == destination:
             return
-        directions_iter = cls.get_directions_from_cell_to_cell(_map, origin, destination)
+        directions_iter = cls.get_directions_from_cell_to_cell(
+            _map, origin, destination
+        )
         droid.follow_directions(directions_iter)
 
     @classmethod
-    def get_directions_from_cell_to_cell(cls, _map:Map, from_cell, to_cell):
+    def get_directions_from_cell_to_cell(cls, _map: Map, from_cell, to_cell):
         path = nx.shortest_path(_map.graph, from_cell, to_cell)
         path.append(None)
         directions_iter = cls.get_directions_through_path(path)
@@ -203,9 +216,9 @@ class ExplorerAI:
 
     @staticmethod
     def get_direction_to_neighbouring_cell(from_cell, to_cell):
-        delta_x = to_cell[0]-from_cell[0]
-        delta_y = to_cell[1]-from_cell[1]
-        if not delta_x*delta_y == 0:
+        delta_x = to_cell[0] - from_cell[0]
+        delta_y = to_cell[1] - from_cell[1]
+        if not delta_x * delta_y == 0:
             raise ValueError("Cells are not next to each other")
         if delta_x == 1:
             return EAST
@@ -238,7 +251,9 @@ def part_1_and_2(inp):
     _map = Map()
     droid = RepairDroid(inp)
     ExplorerAI.map_out_whole_area(_map, droid)
-    shortest_path = ExplorerAI.find_shortest_sequence_of_directions_to_get_to_oxygen(_map, droid)
+    shortest_path = ExplorerAI.find_shortest_sequence_of_directions_to_get_to_oxygen(
+        _map, droid
+    )
     p1 = len(list(shortest_path))
     shortest_path_to_any = nx.single_source_shortest_path_length(_map.graph, (12, -12))
     p2 = max(shortest_path_to_any.values())
