@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Tuple, Iterable
+from typing import Tuple, Iterable
 import networkx as nx
 import matplotlib.pyplot as plt
 

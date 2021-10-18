@@ -1,7 +1,6 @@
 import dataclasses
 from collections import defaultdict
 from typing import Dict
-from unittest import TestCase
 
 from day_09.solution_not_async import IntcodeComputer
 
