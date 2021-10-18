@@ -1,4 +1,6 @@
 import itertools
+from functools import lru_cache
+from typing import List
 from unittest import TestCase
 
 import numpy as np
@@ -41,25 +43,158 @@ def generate_repeating_pattern(row, length):
         yield value
         value = next(base)
 
+def generate_repeating_pattern_batches(digit_number):
+    repetitions = digit_number+1
+    yield (0, repetitions - 1)
+    yield from itertools.cycle(((1, repetitions), (0, repetitions), (-1, repetitions), (0, repetitions)))
+
 
 def make_single_digit(signal_array):
     single_digit_signal = np.array([abs(num) % 10 for num in signal_array])
     return single_digit_signal
 
+def make_singe_digit_iter(signal):
+    yield from (abs(num) % 10 for num in signal)
 
-def part_1(inp, num_phases=100):
+
+def part_1_old(inp, num_phases=100):
     signal = np.array(inp)
     length = len(signal)
-    pattern_matrix = np.array([list(generate_repeating_pattern(row, length)) for row in range(length)])
+    pattern_matrix = np.stack(
+        (np.fromiter(generate_repeating_pattern(row, length), 'int8', length) for row in range(length))
+    )
     for _ in range(num_phases):
         output_signal = np.matmul(signal, pattern_matrix.T)
         output_signal_single_digit = make_single_digit(output_signal)
         signal = output_signal_single_digit
     return "".join([str(n) for n in signal[0:8]])
 
+def full_signal_iter(inp, repetitions):
+    for _ in range(repetitions):
+        yield from inp
 
-def part_2(inp):
-    pass
+def generate_output_signal(signal, length):
+    signal_orig = signal
+    for row in range(length):
+        signal_clone, signal_orig = itertools.tee(signal_orig)
+        row_sum = 0
+        for n, factor in zip(signal_clone, generate_repeating_pattern(row, length)):
+            row_sum += n*factor
+        yield row_sum
+
+def generate_output_signal_in_batches(signal:List, length):
+    print(f"input is of length {length}")
+    for digit_number in range(length):
+        #print(f"digit number is {digit_number}")
+        digit_sum = 0
+        pointer = 0
+        for factor, quantity in generate_repeating_pattern_batches(digit_number):
+            if factor == 1:
+                digit_sum += sum(signal[pointer:pointer+quantity])
+            elif factor == -1:
+                digit_sum -= sum(signal[pointer:pointer+quantity])
+            pointer += quantity
+            if pointer > length:
+                yield digit_sum
+                break
+
+def generate_output_signal_list(signal: List, length):
+    # print(signal)
+    output_signal = list()
+    for digit_number in range(length):
+        digit_sum = get_digit_sum(digit_number, length, signal)
+        output_signal.append(abs(digit_sum) % 10)
+    # print(output_signal)
+    return output_signal
+
+@lru_cache(None)
+def generate_factors_array(digit_number, length):
+    return np.fromiter(generate_repeating_pattern(digit_number, length), 'int8', length)
+
+def part_2_with_trick(inp, repetitions=10000, num_phases=100):
+    offset = int("".join([str(v) for v in inp[0:7]]))
+    print(f"offset is {offset}")
+    signal = list(full_signal_iter(inp, repetitions))
+    length = len(signal)
+    if not offset > length/2:
+        raise RuntimeError("cannot use the trick")
+    signal = signal[offset:]
+    length = len(signal)
+    for n in range(num_phases):
+        print(f"phase {n}")
+        output_list = [sum(signal)]
+        for digit, value in zip(range(1, length), signal):
+            digit_sum=output_list[-1]-value
+            output_list.append(digit_sum)
+        signal = [abs(v)%10 for v in output_list]
+
+    return "".join([str(n) for n in signal[0:8]])
+
+def generate_output_signal_array_mult_single(signal:List, length, offset):
+    signal_array = np.array(signal)
+
+    output_signal = list()
+    for digit_number in range(length):
+        if digit_number % 100 == 0:
+            print(f"Calculating digit number {digit_number}")
+        factors = np.fromiter(generate_repeating_pattern(digit_number, length), 'int8', length)
+        scalar_product = np.dot(signal_array, factors)
+        output_signal.append(abs(scalar_product) % 10)
+    return output_signal
+
+def get_digit_sum(digit_number, length, signal):
+    digit_sum = 0
+    signal_iter = iter(signal)
+    counter = 0
+    for _ in range(digit_number):
+        # skip intial zeroes
+        next(signal_iter)
+        counter += 1
+    while True:
+        for _ in range(digit_number + 1):
+            digit_sum += next(signal_iter)
+            counter += 1
+            if counter == length:
+                return digit_sum
+        for _ in range(digit_number + 1):
+            next(signal_iter)
+            counter += 1
+            if counter == length:
+                return digit_sum
+        for _ in range(digit_number + 1):
+            digit_sum -= next(signal_iter)
+            counter += 1
+            if counter == length:
+                return digit_sum
+        for _ in range(digit_number + 1):
+            next(signal_iter)
+            counter += 1
+            if counter == length:
+                return digit_sum
+
+
+
+def part_1(inp, num_phases = 100):
+    return part_2(inp, num_phases=num_phases, repetitions=1, is_part_1 = True)
+
+
+def part_2(inp, num_phases = 100, repetitions = 10000, is_part_1=False):
+    if not is_part_1:
+        try:
+            return part_2_with_trick(inp, repetitions=repetitions, num_phases=num_phases)
+        except RuntimeError:
+            pass
+    offset = int("".join([str(v) for v in inp[0:7]]))
+    print(f"offset is {offset}")
+    signal = list(full_signal_iter(inp, repetitions))
+    length = len(signal)
+    for n in range(num_phases):
+        print(f"phase {n}")
+        output_signal = generate_output_signal_array_mult_single(signal, length, offset)
+        signal = output_signal
+    if is_part_1:
+        return "".join([str(n) for n in signal[0:8]])
+    return "".join([str(n) for n in signal[0:8]])
 
 
 def test_sample_0(self):
@@ -85,6 +220,11 @@ def test_sample_3(self):
     expected = "52432133"
     self.assertEqual(expected, part_1(inp))
 
+def test_sample_4(self):
+    print("Part 2 test...")
+    inp = [int(v) for v in "03036732577212944063491565474664"]
+    expected = "84462026"
+    self.assertEqual(expected, part_2(inp))
 
 if __name__ == "__main__":
     print('*** solving tests ***')
@@ -92,5 +232,6 @@ if __name__ == "__main__":
     test_sample_1(TestCase())
     test_sample_2(TestCase())
     test_sample_3(TestCase())
+    test_sample_4(TestCase())
     print('*** solving main ***')
     main("input")
