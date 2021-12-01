@@ -8,11 +8,19 @@ def read_input(filename="input"):
     return inp
 
 def part_1(inp):
-    print(inp)
-    pass
+    c = 0
+    for n in range( len(inp)-1):
+        if inp[n] < inp [n+1]:
+            c += 1
+    return c
 
 def part_2(inp):
-    pass
+    windows = []
+    for n in range(len(inp)-2):
+        windows.append(inp[n] + inp[n+1] + inp[n+2])
+    print(windows)
+    return part_1(windows)
+
 
 def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
