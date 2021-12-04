@@ -8,11 +8,14 @@ class Board:
     def __init__(self, numbers):
         self.numbers = np.array(numbers)
         self.seen = np.array([[False] * 5] * 5)
+        self.has_won = False
 
     def has_bingo(self):
         if 5 in np.sum(self.seen, axis=0):
+            self.has_won = True
             return True
         if 5 in np.sum(self.seen, axis=1):
+            self.has_won = True
             return True
         return False
 
@@ -59,6 +62,19 @@ class Bingo:
                 return self.score(winning_board)
         print('done')
 
+    def play_bad_bingo(self):
+        while self.numbers:
+            self.play_next_number()
+            if len(self.boards) == 1 and self.boards[0].has_bingo():
+                return self.score(self.boards[0])
+            self.remove_winning_boards()
+        print('done')
+
+    def remove_winning_boards(self):
+        for board in self.boards:
+            if board.has_bingo():
+                self.boards.remove(board)
+
     def score(self, board):
         return self.last_number * board.sum_of_unmarked()
 
@@ -90,7 +106,8 @@ def part_1(inp):
 
 
 def part_2(inp):
-    pass
+    bingo = Bingo(inp[0], inp[1])
+    return bingo.play_bad_bingo()
 
 
 def main(input_file):
@@ -110,6 +127,7 @@ def main(input_file):
 def test_sample_1(self):
     inp = read_input("sample_1")
     self.assertEqual(4512, part_1(inp))
+    self.assertEqual(1924, part_2(inp))
     pass
 
 
