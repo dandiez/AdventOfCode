@@ -50,7 +50,7 @@ class Bingo:
             winning_board = self.board_with_bingo()
             if winning_board is not None:
                 return self.score(winning_board)
-        print('done')
+        print('no solution')
 
     def play_bad_bingo(self):
         while self.numbers:
@@ -58,7 +58,7 @@ class Bingo:
             if len(self.boards) == 1 and self.boards[0].has_bingo():
                 return self.score(self.boards[0])
             self.remove_winning_boards()
-        print('done')
+        print('no solution')
 
     def remove_winning_boards(self):
         for board in self.boards:
