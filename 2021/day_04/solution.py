@@ -30,19 +30,9 @@ def read_input(filename="input"):
         lines = [line.strip() for line in f.readlines() if line.strip()]
     bingo_numbers = [int(n) for n in lines[0].split(',')]
     numbs_for_card_boards = [[int(n) for n in line.split()] for line in lines[1:]]
-    boards = []
-    k = 0
-    board = []
-    for row in numbs_for_card_boards:
-        board.append(row)
-        if k == 4:
-            boards.append(Board(board))
-            k = 0
-            board = []
-        else:
-            k += 1
-
-    inp = (bingo_numbers, boards)
+    all_boards = np.array(numbs_for_card_boards)
+    all_boards = all_boards.reshape((-1, 5, 5))
+    inp = (bingo_numbers, [Board(board) for board in all_boards])
     return inp
 
 
