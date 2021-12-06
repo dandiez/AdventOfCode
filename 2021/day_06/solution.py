@@ -10,27 +10,18 @@ def read_input(filename="input"):
 
 
 def part_1(inp):
-    for n in range(80):
-        inp = simulate_one(inp)
-    return len(inp)
-
-
-def simulate_one(inp):
-    new_inp = []
-    for f in inp:
-        if f == 0:
-            new_inp.append(6)
-            new_inp.append(8)
-        else:  #
-            new_inp.append(f - 1)
-    return new_inp
+    return simulate_many(inp, 80)
 
 
 def part_2(inp):
-    inp_dict = Counter(inp)
-    for n in range(256):
-        inp_dict = simulate_one_dict(inp_dict)
-    return sum(inp_dict.values())
+    return simulate_many(inp, 256)
+
+
+def simulate_many(inp, cycles):
+    inp = Counter(inp)
+    for n in range(cycles):
+        inp = simulate_one_dict(inp)
+    return sum(inp.values())
 
 
 def simulate_one_dict(inp):
@@ -60,17 +51,11 @@ def main(input_file):
 
 def test_sample_1(self):
     inp = read_input("sample_1")
-    # self.assertEqual(5934, part_1(inp))
-    pass
-
-
-def test_sample_2(self):
-    pass
+    self.assertEqual(5934, part_1(inp))
 
 
 if __name__ == "__main__":
     print('*** solving tests ***')
     test_sample_1(TestCase())
-    test_sample_2(TestCase())
     print('*** solving main ***')
     main("input")
