@@ -56,7 +56,7 @@ def get_number(line):
             return decode_four(four, key)
 
 
-def decode(str_num, key ):
+def decode(str_num, key):
     segments = []
     for digit in str_num:
         segments.append(key[digit])
@@ -65,9 +65,10 @@ def decode(str_num, key ):
         return segment_map[segs]
     raise ValueError('not possible')
 
+
 def decode_four(four, key):
     decoded = [decode(str_num, key) for str_num in four]
-    return decoded[0]*1000+decoded[1]*100+decoded[2]*10+decoded[3]
+    return decoded[0] * 1000 + decoded[1] * 100 + decoded[2] * 10 + decoded[3]
 
 
 def decode_all(ten, key):
