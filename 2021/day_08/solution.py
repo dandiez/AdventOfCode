@@ -49,29 +49,25 @@ def get_number(line):
     for perm in itertools.permutations('abcdefg'):
         key = {letter: segment for segment, letter in enumerate(perm)}
         try:
-            decode_all(ten, key)
-        except ValueError:
+            try_decode_ten(ten, key)
+        except KeyError:
             continue
         else:
             return decode_four(four, key)
 
 
 def decode(str_num, key):
-    segments = []
-    for digit in str_num:
-        segments.append(key[digit])
+    segments = [key[digit] for digit in str_num]
     segs = tuple(sorted(segments))
-    if tuple(sorted(segments)) in segment_map:
-        return segment_map[segs]
-    raise ValueError('not possible')
+    return segment_map[segs]
 
 
 def decode_four(four, key):
     decoded = [decode(str_num, key) for str_num in four]
-    return decoded[0] * 1000 + decoded[1] * 100 + decoded[2] * 10 + decoded[3]
+    return sum(decoded[n] * 10 ** (3 - n) for n in range(4))
 
 
-def decode_all(ten, key):
+def try_decode_ten(ten, key):
     for num in ten:
         decode(num, key)
 
