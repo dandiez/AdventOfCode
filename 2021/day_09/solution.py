@@ -89,14 +89,13 @@ def find_basin_around_point(point, grid):
     seen = set.union(basin_points, neigh)
     while neigh:
         n = neigh.pop()
+        seen.add(n)
         if n not in grid.grid:
             continue
         if grid.grid[n] == 9:
-            seen.add(n)
             continue
         more_neigh = set(nn for nn in neighbours(*n) if nn not in seen)
         neigh.update(more_neigh)
-        seen.add(n)
         basin_points.add(n)
     return basin_points
 
