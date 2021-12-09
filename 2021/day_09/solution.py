@@ -22,7 +22,7 @@ class Grid:
 
 
 def get_risk_levels(grid: Grid):
-    yield from (val + 1 for val in find_local_min_values(grid))
+    yield from (val + 1 for coords, val in find_local_min_values(grid))
 
 
 def get_grid(inp):
@@ -41,7 +41,7 @@ def find_local_min_values(grid: Grid):
             val = grid.grid[i, j]
             if is_min((i, j), grid):
                 print(f'min in {i,j}:{val}')
-                yield val
+                yield (i,j), val
 
 
 def is_min(coords, grid: Grid):
@@ -62,8 +62,41 @@ def neighbours(i, j):
 
 
 def part_2(inp):
-    pass
+    grid = get_grid(inp)
+    basins = get_basins(grid)
+    sizes = get_basin_sizes(basins)
+    sizes_sorted = sorted(list(sizes))
+    return sizes_sorted[-1]*sizes_sorted[-2]*sizes_sorted[-3]
 
+def get_basin_sizes(basins):
+    for basin in basins:
+        yield len(basin)
+
+def get_basins(grid):
+    basins = []
+    locations_with_basins = set()
+    starting_points = set( coords for coords, val in find_local_min_values(grid))
+    while starting_points:
+        point = starting_points.pop()
+        basins.append(find_basin_around_point(point, grid))
+    return basins
+
+def find_basin_around_point(point, grid):
+    basin_points ={point}
+    neigh = set(neighbours(*point))
+    seen = set.union(basin_points, neigh)
+    while neigh:
+        n = neigh.pop()
+        if n not in grid.grid:
+            continue
+        if grid.grid[n]==9:
+            seen.add(n)
+            continue
+        more_neigh = set(nn for nn in neighbours(*n) if nn not in seen)
+        neigh.update(more_neigh)
+        seen.add(n)
+        basin_points.add(n)
+    return basin_points
 
 def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
@@ -82,6 +115,7 @@ def main(input_file):
 def test_sample_1(self):
     inp = read_input("sample_1")
     self.assertEqual(15, part_1(inp))
+    self.assertEqual(1134, part_2(inp))
 
 
 def test_sample_2(self):
