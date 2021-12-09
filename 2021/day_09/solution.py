@@ -40,7 +40,6 @@ def find_local_min_values(grid: Grid):
         for j in range(grid.num_cols):
             val = grid.grid[i, j]
             if is_min((i, j), grid):
-                print(f'min in {i, j}:{val}')
                 yield (i, j), val
 
 
@@ -120,13 +119,8 @@ def test_sample_1(self):
     self.assertEqual(1134, part_2(inp))
 
 
-def test_sample_2(self):
-    pass
-
-
 if __name__ == "__main__":
     print('*** solving tests ***')
     test_sample_1(TestCase())
-    test_sample_2(TestCase())
     print('*** solving main ***')
     main("input")
