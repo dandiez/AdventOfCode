@@ -41,7 +41,7 @@ class Octopuses:
         return tuple(neighbours)
 
 
-def analyse_octopuses(inp) -> Octopuses:
+def load_octopuses(inp) -> Octopuses:
     num_rows = len(inp)
     num_cols = len(inp[0])
     grid = {(i, j): val for i, row in enumerate(inp) for j, val in enumerate(row)}
@@ -49,12 +49,12 @@ def analyse_octopuses(inp) -> Octopuses:
 
 
 def part_1(inp) -> int:
-    octos = analyse_octopuses(inp)
+    octos = load_octopuses(inp)
     return sum(simulate_step(octos) for _ in range(100))
 
 
 def part_2(inp) -> int:
-    g = analyse_octopuses(inp)
+    g = load_octopuses(inp)
     for n in range(1, 99999999):
         try:
             simulate_step(g)
@@ -91,10 +91,10 @@ def needs_flashing(grid) -> Set[Coords]:
     return set(loc for loc in grid if grid[loc] > 9)
 
 
-def flash_neighbours(g: Octopuses, loc: Coords):
-    neighbours = g.neighbours[loc]
+def flash_neighbours(octos: Octopuses, loc: Coords):
+    neighbours = octos.neighbours[loc]
     for n in neighbours:
-        g.grid[n] += 1
+        octos.grid[n] += 1
 
 
 def count_and_reset_flashed(grid) -> int:
