@@ -1,4 +1,5 @@
 import dataclasses
+from typing import Tuple, Dict, Set
 from unittest import TestCase
 
 
@@ -9,12 +10,16 @@ def read_input(filename="input"):
     return inp
 
 
+Coords = Tuple[int, int]
+Grid = Dict[Coords, int]
+
+
 @dataclasses.dataclass
-class Grid:
+class Octopuses:
     num_rows: int
     num_cols: int
-    grid: dict
-    neighbours: dict = dataclasses.field(init=False)
+    grid: Grid
+    neighbours: Dict[Coords, Tuple[Coords]] = dataclasses.field(init=False)
 
     def __post_init__(self):
         self._calculate_all_valid_neighbours()
@@ -26,7 +31,7 @@ class Grid:
                 location
             )
 
-    def _calculate_valid_neighbours_at_location(self, location):
+    def _calculate_valid_neighbours_at_location(self, location: Coords):
         neighbours = []
         i, j = location
         for n in range(i - 1, i + 2):
@@ -36,42 +41,44 @@ class Grid:
         return tuple(neighbours)
 
 
-def get_grid(inp):
+def analyse_octopuses(inp) -> Octopuses:
     num_rows = len(inp)
     num_cols = len(inp[0])
     grid = {(i, j): val for i, row in enumerate(inp) for j, val in enumerate(row)}
-    return Grid(num_rows=num_rows, num_cols=num_cols, grid=grid)
+    return Octopuses(num_rows=num_rows, num_cols=num_cols, grid=grid)
 
 
-def part_1(inp):
-    g = get_grid(inp)
-    return sum(simulate_step(g) for _ in range(100))
+def part_1(inp) -> int:
+    octos = analyse_octopuses(inp)
+    return sum(simulate_step(octos) for _ in range(100))
 
-def part_2(inp):
-    g = get_grid(inp)
+
+def part_2(inp) -> int:
+    g = analyse_octopuses(inp)
     for n in range(1, 99999999):
         try:
             simulate_step(g)
         except StopIteration:
             return n
+    raise RuntimeError("Cannot find sync step")
 
 
-def simulate_step(g):
-    increment_all(g.grid)
+def simulate_step(octos: Octopuses) -> int:
+    increment_all(octos.grid)
     already_flashed = set()
     while True:
         new_flashers = {
-            loc for loc in needs_flashing(g.grid) if loc not in already_flashed
+            loc for loc in needs_flashing(octos.grid) if loc not in already_flashed
         }
         if not new_flashers:
             break
         while new_flashers:
             loc = new_flashers.pop()
-            flash_neighbours(g, loc)
+            flash_neighbours(octos, loc)
             already_flashed.add(loc)
-    num_flashed = count_and_reset_flashed(g.grid)
-    if len(already_flashed) == len(g.grid):
-        raise StopIteration('in sync')
+    num_flashed = count_and_reset_flashed(octos.grid)
+    if len(already_flashed) == len(octos.grid):
+        raise StopIteration("in sync")
     return num_flashed
 
 
@@ -80,25 +87,23 @@ def increment_all(grid):
         grid[loc] += 1
 
 
-def needs_flashing(grid):
+def needs_flashing(grid) -> Set[Coords]:
     return set(loc for loc in grid if grid[loc] > 9)
 
 
-def flash_neighbours(g: Grid, loc):
+def flash_neighbours(g: Octopuses, loc: Coords):
     neighbours = g.neighbours[loc]
     for n in neighbours:
         g.grid[n] += 1
 
 
-def count_and_reset_flashed(grid):
+def count_and_reset_flashed(grid) -> int:
     count = 0
     for loc in grid:
         if grid[loc] > 9:
             grid[loc] = 0
             count += 1
     return count
-
-
 
 
 def main(input_file):
@@ -118,15 +123,11 @@ def main(input_file):
 def test_sample_1(self):
     inp = read_input("sample_1")
     self.assertEqual(1656, part_1(inp))
-
-
-def test_sample_2(self):
-    pass
+    self.assertEqual(195, part_2(inp))
 
 
 if __name__ == "__main__":
     print("*** solving tests ***")
     test_sample_1(TestCase())
-    test_sample_2(TestCase())
     print("*** solving main ***")
     main("input")
