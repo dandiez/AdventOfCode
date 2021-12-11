@@ -47,6 +47,14 @@ def part_1(inp):
     g = get_grid(inp)
     return sum(simulate_step(g) for _ in range(100))
 
+def part_2(inp):
+    g = get_grid(inp)
+    for n in range(1, 99999999):
+        try:
+            simulate_step(g)
+        except StopIteration:
+            return n
+
 
 def simulate_step(g):
     increment_all(g.grid)
@@ -62,6 +70,8 @@ def simulate_step(g):
             flash_neighbours(g, loc)
             already_flashed.add(loc)
     num_flashed = count_and_reset_flashed(g.grid)
+    if len(already_flashed) == len(g.grid):
+        raise StopIteration('in sync')
     return num_flashed
 
 
@@ -89,8 +99,6 @@ def count_and_reset_flashed(grid):
     return count
 
 
-def part_2(inp):
-    pass
 
 
 def main(input_file):
