@@ -66,9 +66,9 @@ class Caves:
                     continue
                 else:
                     new_double_visit_was_used = True
-            new_visited_small_caves = copy.deepcopy(visited_small_caves)
-            new_path_so_far = copy.deepcopy(path_so_far)
-            if neighbour_cave.lower() == neighbour_cave:
+            new_visited_small_caves = visited_small_caves.copy()
+            new_path_so_far = path_so_far.copy()
+            if neighbour_cave.islower():
                 new_visited_small_caves.add(neighbour_cave)
             new_path_so_far.append(neighbour_cave)
             yield from self.yield_paths(
