@@ -1,5 +1,6 @@
 import dataclasses
 from collections import defaultdict
+from functools import lru_cache
 from unittest import TestCase
 
 DEBUG_PRINT_PATHS = False
@@ -15,8 +16,9 @@ def read_input(filename="input"):
 def part_1(inp):
     caves = Caves(inp)
     return count_paths_to_target_cave(
-        caves.nodes,
-        VisitState(current_cave="start", target_cave="end"),
+        caves=caves.nodes,
+        visit_state=VisitState(current_cave="start"),
+        target_cave="end",
         allow_double_small_visit=False,
     )
 
@@ -24,16 +26,36 @@ def part_1(inp):
 def part_2(inp):
     caves = Caves(inp)
     return count_paths_to_target_cave(
-        caves.nodes,
-        VisitState(current_cave="start", target_cave="end"),
+        caves=caves.nodes,
+        visit_state=VisitState(current_cave="start"),
+        target_cave="end",
         allow_double_small_visit=True,
     )
+
+
+def count_paths_to_target_cave(
+    *, caves, visit_state: "VisitState", target_cave, allow_double_small_visit
+):
+    paths_to_target = 0
+    for neighbour_cave in caves[visit_state.current_cave]:
+        if neighbour_cave == target_cave:
+            paths_to_target += 1
+        elif visit_state.cave_visit_allowed(neighbour_cave, allow_double_small_visit):
+            neighbour_cave_state = visit_state.get_visit_neighbour_cave_state(
+                neighbour_cave
+            )
+            paths_to_target += count_paths_to_target_cave(
+                caves=caves,
+                visit_state=neighbour_cave_state,
+                target_cave=target_cave,
+                allow_double_small_visit=allow_double_small_visit,
+            )
+    return paths_to_target
 
 
 @dataclasses.dataclass
 class VisitState:
     current_cave: str
-    target_cave: str
     visited_small_caves: set[str] = dataclasses.field(default_factory=set)
     double_visit_was_used: bool = False
     # path_to_current_cave: list[str] = dataclasses.field(default_factory=list)
@@ -42,7 +64,6 @@ class VisitState:
         # Assumes the cave to visit is a valid cave
         neighbour_state = VisitState(
             current_cave=neighbour_to_visit,
-            target_cave=self.target_cave,
             visited_small_caves=self.visited_small_caves.copy(),
             double_visit_was_used=self.double_visit_was_used,
             # path_to_current_cave=self.path_to_current_cave.copy(),
@@ -50,20 +71,17 @@ class VisitState:
         # neighbour_state.path_to_current_cave.append(neighbour_state.current_cave)
         if (
             neighbour_state.current_cave in neighbour_state.visited_small_caves
-            and neighbour_state.current_cave.islower()
+            and cave_is_small(neighbour_state.current_cave)
         ):
             neighbour_state.double_visit_was_used = True
         else:
             neighbour_state.visited_small_caves.add(neighbour_state.current_cave)
         return neighbour_state
 
-    def arrived(self):
-        return self.current_cave == self.target_cave
-
     def cave_visit_allowed(self, cave, allow_double_small_visits):
         if cave == "start":
             return False
-        if not cave.islower():
+        if not cave_is_small(cave):
             return True
         if not allow_double_small_visits:
             # part 1
@@ -72,6 +90,11 @@ class VisitState:
         if self.double_visit_was_used and cave in self.visited_small_caves:
             return False
         return True
+
+
+@lru_cache(None)
+def cave_is_small(cave):
+    return cave.islower()
 
 
 class Caves:
@@ -83,23 +106,6 @@ class Caves:
         for a, b in inp:
             self.nodes[a].append(b)
             self.nodes[b].append(a)
-
-
-def count_paths_to_target_cave(
-    caves, visit_state: VisitState, allow_double_small_visit
-):
-    if visit_state.arrived():
-        return 1
-    paths_to_target = 0
-    for neighbour_cave in caves[visit_state.current_cave]:
-        if visit_state.cave_visit_allowed(neighbour_cave, allow_double_small_visit):
-            neighbour_cave_state = visit_state.get_visit_neighbour_cave_state(
-                neighbour_cave
-            )
-            paths_to_target += count_paths_to_target_cave(
-                caves, neighbour_cave_state, allow_double_small_visit
-            )
-    return paths_to_target
 
 
 def main(input_file):
@@ -117,12 +123,12 @@ def main(input_file):
 
 
 def test_sample_1(self):
-    # inp = read_input("sample_1")
-    # self.assertEqual(10, part_1(inp))
-    # inp = read_input("sample_2")
-    # self.assertEqual(19, part_1(inp))
-    # inp = read_input("sample_3")
-    # self.assertEqual(226, part_1(inp))
+    inp = read_input("sample_1")
+    self.assertEqual(10, part_1(inp))
+    inp = read_input("sample_2")
+    self.assertEqual(19, part_1(inp))
+    inp = read_input("sample_3")
+    self.assertEqual(226, part_1(inp))
 
     inp = read_input("sample_1")
     self.assertEqual(36, part_2(inp))
