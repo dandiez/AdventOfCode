@@ -37,7 +37,11 @@ def part_2(inp):
 
 @lru_cache(None)
 def count_paths_to_target_cave(
-    *, caves, visit_state: "VisitState", target_cave, allow_double_small_visit
+    *,
+    caves: frozendict,
+    visit_state: "VisitState",
+    target_cave: str,
+    allow_double_small_visit: bool,
 ):
     paths_to_target = 0
     for neighbour_cave in caves[visit_state.current_cave]:
