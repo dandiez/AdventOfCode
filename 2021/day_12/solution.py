@@ -11,13 +11,13 @@ def read_input(filename="input"):
 
 
 def part_1(inp):
-    caves = Caves(inp)
-    return sum(1 for path in caves.yield_paths("start", "end"))
+
     pass
 
 
 def part_2(inp):
-    pass
+    caves = Caves(inp)
+    return sum(1 for path in caves.yield_paths("start", "end", single_small_visited=False))
 
 
 class Caves:
@@ -30,26 +30,35 @@ class Caves:
             self.nodes[a].append(b)
             self.nodes[b].append(a)
 
-    def yield_paths(self, from_node, to_node, visited_small=None, path_so_far=None):
+    def yield_paths(self, from_node, to_node, visited_small=None, path_so_far=None, single_small_visited=None):
+        # print(from_node, to_node, visited_small, path_so_far, single_small_visited)
+        if from_node=='end':
+            return
         visited_small = visited_small or {from_node}
         path_so_far = path_so_far or [from_node]
         for neighbour_node in self.nodes[from_node]:
             if neighbour_node == to_node:
                 yield path_so_far
-            elif neighbour_node in visited_small:
-                continue
-            else:
-                new_visited_small = copy.deepcopy(visited_small)
-                new_path_so_far = copy.deepcopy(path_so_far)
-                if neighbour_node.lower() == neighbour_node:
-                    new_visited_small.add(neighbour_node)
-                new_path_so_far.append(neighbour_node)
-                yield from self.yield_paths(
-                    neighbour_node,
-                    to_node,
-                    visited_small=new_visited_small,
-                    path_so_far=new_path_so_far,
-                )
+            if neighbour_node == 'start':
+                    continue
+            new_single_small_visited = single_small_visited
+            if neighbour_node in visited_small:
+                if single_small_visited == True:
+                    continue
+                else:
+                    new_single_small_visited = True
+            new_visited_small = copy.deepcopy(visited_small)
+            new_path_so_far = copy.deepcopy(path_so_far)
+            if neighbour_node.lower() == neighbour_node:
+                new_visited_small.add(neighbour_node)
+            new_path_so_far.append(neighbour_node)
+            yield from self.yield_paths(
+                neighbour_node,
+                to_node,
+                visited_small=new_visited_small,
+                path_so_far=new_path_so_far,
+                single_small_visited=new_single_small_visited
+            )
 
 
 def main(input_file):
@@ -68,12 +77,11 @@ def main(input_file):
 
 def test_sample_1(self):
     inp = read_input("sample_1")
-    self.assertEqual(10, part_1(inp))
+    self.assertEqual(36, part_2(inp))
     inp = read_input("sample_2")
-    self.assertEqual(19, part_1(inp))
+    self.assertEqual(103, part_2(inp))
     inp = read_input("sample_3")
-    self.assertEqual(226, part_1(inp))
-
+    self.assertEqual(3509, part_2(inp))
 
 def test_sample_2(self):
     pass
