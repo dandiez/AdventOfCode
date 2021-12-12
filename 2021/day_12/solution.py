@@ -2,6 +2,8 @@ import copy
 from collections import defaultdict
 from unittest import TestCase
 
+DEBUG_PRINT_PATHS = False
+
 
 def read_input(filename="input"):
     with open(filename) as f:
@@ -11,13 +13,21 @@ def read_input(filename="input"):
 
 
 def part_1(inp):
-
-    pass
+    caves = Caves(inp)
+    return sum(
+        1
+        for path in caves.yield_paths(
+            "start", "end", False, double_visit_was_used=False
+        )
+    )
 
 
 def part_2(inp):
     caves = Caves(inp)
-    return sum(1 for path in caves.yield_paths("start", "end", single_small_visited=False))
+    return sum(
+        1
+        for path in caves.yield_paths("start", "end", True, double_visit_was_used=False)
+    )
 
 
 class Caves:
@@ -30,34 +40,44 @@ class Caves:
             self.nodes[a].append(b)
             self.nodes[b].append(a)
 
-    def yield_paths(self, from_node, to_node, visited_small=None, path_so_far=None, single_small_visited=None):
-        # print(from_node, to_node, visited_small, path_so_far, single_small_visited)
-        if from_node=='end':
+    def yield_paths(
+        self,
+        from_cave,
+        to_cave,
+        allow_double_small_visit,
+        visited_small_caves=None,
+        path_so_far=None,
+        double_visit_was_used=False,
+    ):
+        if from_cave == "end":
+            if DEBUG_PRINT_PATHS:
+                print(f"Unique path found: {','.join(path_so_far)}")
             return
-        visited_small = visited_small or {from_node}
-        path_so_far = path_so_far or [from_node]
-        for neighbour_node in self.nodes[from_node]:
-            if neighbour_node == to_node:
+        visited_small_caves = visited_small_caves or {from_cave}
+        path_so_far = path_so_far or [from_cave]
+        for neighbour_cave in self.nodes[from_cave]:
+            if neighbour_cave == to_cave:
                 yield path_so_far
-            if neighbour_node == 'start':
-                    continue
-            new_single_small_visited = single_small_visited
-            if neighbour_node in visited_small:
-                if single_small_visited == True:
+            if neighbour_cave == "start":
+                continue
+            new_double_visit_was_used = double_visit_was_used
+            if neighbour_cave in visited_small_caves:
+                if double_visit_was_used or not allow_double_small_visit:
                     continue
                 else:
-                    new_single_small_visited = True
-            new_visited_small = copy.deepcopy(visited_small)
+                    new_double_visit_was_used = True
+            new_visited_small_caves = copy.deepcopy(visited_small_caves)
             new_path_so_far = copy.deepcopy(path_so_far)
-            if neighbour_node.lower() == neighbour_node:
-                new_visited_small.add(neighbour_node)
-            new_path_so_far.append(neighbour_node)
+            if neighbour_cave.lower() == neighbour_cave:
+                new_visited_small_caves.add(neighbour_cave)
+            new_path_so_far.append(neighbour_cave)
             yield from self.yield_paths(
-                neighbour_node,
-                to_node,
-                visited_small=new_visited_small,
+                neighbour_cave,
+                to_cave,
+                allow_double_small_visit,
+                visited_small_caves=new_visited_small_caves,
                 path_so_far=new_path_so_far,
-                single_small_visited=new_single_small_visited
+                double_visit_was_used=new_double_visit_was_used,
             )
 
 
@@ -82,6 +102,14 @@ def test_sample_1(self):
     self.assertEqual(103, part_2(inp))
     inp = read_input("sample_3")
     self.assertEqual(3509, part_2(inp))
+
+    inp = read_input("sample_1")
+    self.assertEqual(36, part_2(inp))
+    inp = read_input("sample_2")
+    self.assertEqual(103, part_2(inp))
+    inp = read_input("sample_3")
+    self.assertEqual(3509, part_2(inp))
+
 
 def test_sample_2(self):
     pass
