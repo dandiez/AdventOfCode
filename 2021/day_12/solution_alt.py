@@ -3,6 +3,8 @@ from collections import defaultdict
 from functools import lru_cache
 from unittest import TestCase
 
+from frozendict import frozendict
+
 DEBUG_PRINT_PATHS = False
 
 
@@ -16,7 +18,7 @@ def read_input(filename="input"):
 def part_1(inp):
     caves = Caves(inp)
     return count_paths_to_target_cave(
-        caves=caves.nodes,
+        caves=caves.hashable(),
         visit_state=VisitState(current_cave="start"),
         target_cave="end",
         allow_double_small_visit=False,
@@ -26,13 +28,14 @@ def part_1(inp):
 def part_2(inp):
     caves = Caves(inp)
     return count_paths_to_target_cave(
-        caves=caves.nodes,
+        caves=caves.hashable(),
         visit_state=VisitState(current_cave="start"),
         target_cave="end",
         allow_double_small_visit=True,
     )
 
 
+@lru_cache(None)
 def count_paths_to_target_cave(
     *, caves, visit_state: "VisitState", target_cave, allow_double_small_visit
 ):
@@ -53,30 +56,29 @@ def count_paths_to_target_cave(
     return paths_to_target
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True, eq=True)
 class VisitState:
     current_cave: str
-    visited_small_caves: set[str] = dataclasses.field(default_factory=set)
+    visited_small_caves: frozenset[str] = dataclasses.field(default_factory=frozenset)
     double_visit_was_used: bool = False
-    # path_to_current_cave: list[str] = dataclasses.field(default_factory=list)
 
     def get_visit_neighbour_cave_state(self, neighbour_to_visit):
         # Assumes the cave to visit is a valid cave
-        neighbour_state = VisitState(
-            current_cave=neighbour_to_visit,
-            visited_small_caves=self.visited_small_caves.copy(),
-            double_visit_was_used=self.double_visit_was_used,
-            # path_to_current_cave=self.path_to_current_cave.copy(),
-        )
-        # neighbour_state.path_to_current_cave.append(neighbour_state.current_cave)
-        if (
-            neighbour_state.current_cave in neighbour_state.visited_small_caves
-            and cave_is_small(neighbour_state.current_cave)
+        if neighbour_to_visit in self.visited_small_caves and cave_is_small(
+            neighbour_to_visit
         ):
-            neighbour_state.double_visit_was_used = True
+            double_visit_was_used = True
+            visited_small_caves = self.visited_small_caves.copy()
         else:
-            neighbour_state.visited_small_caves.add(neighbour_state.current_cave)
-        return neighbour_state
+            double_visit_was_used = self.double_visit_was_used
+            visited_small_caves = frozenset.union(
+                self.visited_small_caves, {neighbour_to_visit}
+            )
+        return VisitState(
+            current_cave=neighbour_to_visit,
+            visited_small_caves=visited_small_caves,
+            double_visit_was_used=double_visit_was_used,
+        )
 
     def cave_visit_allowed(self, cave, allow_double_small_visits):
         if cave == "start":
@@ -106,6 +108,9 @@ class Caves:
         for a, b in inp:
             self.nodes[a].append(b)
             self.nodes[b].append(a)
+
+    def hashable(self):
+        return frozendict({k: tuple(v) for k, v in self.nodes.items()})
 
 
 def main(input_file):
