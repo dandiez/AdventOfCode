@@ -26,6 +26,13 @@ def part_1(inp):
     return len(folded(coords, operation))
 
 
+def part_2(inp):
+    coords, instructions = inp
+    for operation in instructions:
+        coords = folded(coords, operation)
+    show_grid(coords)
+
+
 def folded(coords, operation):
     axis, location = operation
     new_coords = set()
@@ -49,14 +56,6 @@ def show_grid(coords):
             else:
                 line += "."
         print(line)
-
-
-def part_2(inp):
-    coords, instructions = inp
-    for operation in instructions:
-        coords = folded(coords, operation)
-    show_grid(coords)
-
 
 
 def main(input_file):
