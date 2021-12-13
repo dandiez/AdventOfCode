@@ -22,7 +22,6 @@ def read_input(filename="input"):
 
 def part_1(inp):
     coords, instructions = inp
-    # show_grid(coords)
     operation = instructions[0]
     return len(folded(coords, operation))
 
@@ -53,7 +52,11 @@ def show_grid(coords):
 
 
 def part_2(inp):
-    pass
+    coords, instructions = inp
+    for operation in instructions:
+        coords = folded(coords, operation)
+    show_grid(coords)
+
 
 
 def main(input_file):
