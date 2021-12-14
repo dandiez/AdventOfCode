@@ -8,58 +8,56 @@ def read_input(filename="input"):
     starter = lines[0]
     rules = []
     for line in lines[1:]:
-        a, b = line.split(' -> ')
+        a, b = line.split(" -> ")
         rules.append((a, b))
     return starter, rules
 
+
 def part_1(inp):
     starter, rules = inp
-    left, right = starter[0], starter[-1]
     pairs = defaultdict(int)
-    for n in range(len(starter)-1):
-        pairs[starter[n:n+2]] += 1
-
+    for n in range(len(starter) - 1):
+        pairs[starter[n : n + 2]] += 1
     prep_rules = prepare_rules(rules)
-
     for _ in range(10):
         pairs = update(pairs, prep_rules)
-
     return compute_answer(pairs)
+
 
 def compute_answer(pairs):
     elem_count = defaultdict(int)
     for k, val in pairs.items():
-        elem_count[k[0]]+=val
-        elem_count[k[1]]+=val
+        elem_count[k[0]] += val
+        elem_count[k[1]] += val
     # round up to account for first and last element
-    count = [(-(-val//2)) for val in elem_count.values()]
-    return max(count)-min(count)
+    count = [(-(-val // 2)) for val in elem_count.values()]
+    return max(count) - min(count)
+
 
 def prepare_rules(rules):
     prep_rules = []
     for a, b in rules:
         rule_in = a
-        rule_out = (a[0]+b, b + a[1])
+        rule_out = (a[0] + b, b + a[1])
         prep_rules.append((rule_in, rule_out))
     return prep_rules
 
-def update(pairs, rules):
-    new_pairs=pairs.copy()
-    for rule_in, rule_out in rules:
-        if pairs[rule_in]>0:
-            new_pairs[rule_in]-=pairs[rule_in]
-            new_pairs[rule_out[0]]+=pairs[rule_in]
-            new_pairs[rule_out[1]]+=pairs[rule_in]
-    return new_pairs
 
+def update(pairs, rules):
+    new_pairs = pairs.copy()
+    for rule_in, rule_out in rules:
+        if pairs[rule_in] > 0:
+            new_pairs[rule_in] -= pairs[rule_in]
+            new_pairs[rule_out[0]] += pairs[rule_in]
+            new_pairs[rule_out[1]] += pairs[rule_in]
+    return new_pairs
 
 
 def part_2(inp):
     starter, rules = inp
-    left, right = starter[0], starter[-1]
     pairs = defaultdict(int)
     for n in range(len(starter) - 1):
-        pairs[starter[n:n + 2]] += 1
+        pairs[starter[n : n + 2]] += 1
 
     prep_rules = prepare_rules(rules)
 
@@ -67,6 +65,7 @@ def part_2(inp):
         pairs = update(pairs, prep_rules)
 
     return compute_answer(pairs)
+
 
 def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
@@ -81,16 +80,19 @@ def main(input_file):
     print(f"Solution to part 2: {p2}")
     return p1, p2
 
+
 def test_sample_1(self):
     inp = read_input("sample_1")
     self.assertEqual(1588, part_1(inp))
 
+
 def test_sample_2(self):
     pass
 
+
 if __name__ == "__main__":
-    print('*** solving tests ***')
+    print("*** solving tests ***")
     test_sample_1(TestCase())
     test_sample_2(TestCase())
-    print('*** solving main ***')
+    print("*** solving main ***")
     main("input")
