@@ -47,7 +47,8 @@ def compute_answer(pairs):
     for k, val in pairs.items():
         elem_count[k[0]] += val
         elem_count[k[1]] += val
-    # round up, to account for first and last element in template
+    # round up, to account for first and last element in template having one less instance.
+    # other elements will appear twice (2*n) times
     count = [(-(-val // 2)) for val in elem_count.values()]
     return max(count) - min(count)
 
