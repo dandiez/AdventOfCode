@@ -5,42 +5,31 @@ from unittest import TestCase
 def read_input(filename="input"):
     with open(filename) as f:
         lines = [line.strip() for line in f.readlines() if line.strip()]
-    starter = lines[0]
+    template = lines[0]
     rules = []
     for line in lines[1:]:
         a, b = line.split(" -> ")
-        rules.append((a, b))
-    return starter, rules
+        a0, a1 = a
+        rules.append((a, (a0 + b, b + a1)))
+    return template, rules
 
 
 def part_1(inp):
-    starter, rules = inp
+    return solve_polymer(inp, 10)
+
+
+def part_2(inp):
+    return solve_polymer(inp, 40)
+
+
+def solve_polymer(inp, num_steps):
+    template, rules = inp
     pairs = defaultdict(int)
-    for n in range(len(starter) - 1):
-        pairs[starter[n : n + 2]] += 1
-    prep_rules = prepare_rules(rules)
-    for _ in range(10):
-        pairs = update(pairs, prep_rules)
+    for n in range(len(template) - 1):
+        pairs[template[n : n + 2]] += 1
+    for _ in range(num_steps):
+        pairs = update(pairs, rules)
     return compute_answer(pairs)
-
-
-def compute_answer(pairs):
-    elem_count = defaultdict(int)
-    for k, val in pairs.items():
-        elem_count[k[0]] += val
-        elem_count[k[1]] += val
-    # round up to account for first and last element
-    count = [(-(-val // 2)) for val in elem_count.values()]
-    return max(count) - min(count)
-
-
-def prepare_rules(rules):
-    prep_rules = []
-    for a, b in rules:
-        rule_in = a
-        rule_out = (a[0] + b, b + a[1])
-        prep_rules.append((rule_in, rule_out))
-    return prep_rules
 
 
 def update(pairs, rules):
@@ -53,18 +42,14 @@ def update(pairs, rules):
     return new_pairs
 
 
-def part_2(inp):
-    starter, rules = inp
-    pairs = defaultdict(int)
-    for n in range(len(starter) - 1):
-        pairs[starter[n : n + 2]] += 1
-
-    prep_rules = prepare_rules(rules)
-
-    for _ in range(40):
-        pairs = update(pairs, prep_rules)
-
-    return compute_answer(pairs)
+def compute_answer(pairs):
+    elem_count = defaultdict(int)
+    for k, val in pairs.items():
+        elem_count[k[0]] += val
+        elem_count[k[1]] += val
+    # round up, to account for first and last element in template
+    count = [(-(-val // 2)) for val in elem_count.values()]
+    return max(count) - min(count)
 
 
 def main(input_file):
@@ -86,13 +71,8 @@ def test_sample_1(self):
     self.assertEqual(1588, part_1(inp))
 
 
-def test_sample_2(self):
-    pass
-
-
 if __name__ == "__main__":
     print("*** solving tests ***")
     test_sample_1(TestCase())
-    test_sample_2(TestCase())
     print("*** solving main ***")
     main("input")
