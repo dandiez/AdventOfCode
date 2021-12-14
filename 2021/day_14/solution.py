@@ -55,7 +55,18 @@ def update(pairs, rules):
 
 
 def part_2(inp):
-    pass
+    starter, rules = inp
+    left, right = starter[0], starter[-1]
+    pairs = defaultdict(int)
+    for n in range(len(starter) - 1):
+        pairs[starter[n:n + 2]] += 1
+
+    prep_rules = prepare_rules(rules)
+
+    for _ in range(40):
+        pairs = update(pairs, prep_rules)
+
+    return compute_answer(pairs)
 
 def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
