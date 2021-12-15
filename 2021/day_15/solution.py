@@ -12,10 +12,14 @@ def read_input(filename="input"):
 
 
 def part_1(inp):
+    return find_shortest_path_length(inp)
+
+
+def find_shortest_path_length(inp):
     num_rows = len(inp)
     num_cols = len(inp[0])
     G = get_graph(inp)
-    return shortest_path_length(G, source=(0, 0), target=(num_rows-1, num_cols-1), weight='weight')
+    return shortest_path_length(G, source=(0, 0), target=(num_rows - 1, num_cols - 1), weight='weight')
 
 
 def get_graph(inp):
@@ -39,8 +43,27 @@ def connect(G, node):
 
 
 def part_2(inp):
-    pass
+    new_inp = get_new_inp(inp)
+    return find_shortest_path_length(new_inp)
 
+def get_new_inp(inp):
+    num_rows = len(inp)
+    num_cols = len(inp[0])
+    nodes = dict()
+    for i in range(5):
+        for j in range(5):
+            for x in range(num_cols):
+                for y in range(num_cols):
+                    node = (x + i*num_cols, y+j*num_rows)
+                    value = ((inp[y][x]+ i + j - 1) % 9 +1)
+                    nodes[node] = value
+    new_inp = []
+    for yy in range(num_rows * 5):
+        new_row = []
+        for xx in range(num_cols * 5):
+            new_row.append(nodes[xx, yy])
+        new_inp.append(new_row)
+    return new_inp
 
 def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
@@ -59,6 +82,7 @@ def main(input_file):
 def test_sample_1(self):
     inp = read_input("sample_1")
     self.assertEqual(40, part_1(inp))
+    self.assertEqual(315, part_2(inp))
 
 
 def test_sample_2(self):
