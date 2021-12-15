@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 import networkx as nx
-from networkx import shortest_path, shortest_path_length
+from networkx import shortest_path_length
 
 
 def read_input(filename="input"):
@@ -19,7 +19,9 @@ def find_shortest_path_length(inp):
     num_rows = len(inp)
     num_cols = len(inp[0])
     G = get_graph(inp)
-    return shortest_path_length(G, source=(0, 0), target=(num_rows - 1, num_cols - 1), weight='weight')
+    return shortest_path_length(
+        G, source=(0, 0), target=(num_rows - 1, num_cols - 1), weight="weight"
+    )
 
 
 def get_graph(inp):
@@ -38,13 +40,14 @@ def connect(G, node):
     for neighbour in neighbours:
         if neighbour not in G:
             continue
-        G.add_edge(neighbour, node, weight=G.nodes[node]['risk'])
-        G.add_edge(node, neighbour, weight=G.nodes[neighbour]['risk'])
+        G.add_edge(neighbour, node, weight=G.nodes[node]["risk"])
+        G.add_edge(node, neighbour, weight=G.nodes[neighbour]["risk"])
 
 
 def part_2(inp):
     new_inp = get_new_inp(inp)
     return find_shortest_path_length(new_inp)
+
 
 def get_new_inp(inp):
     num_rows = len(inp)
@@ -54,8 +57,8 @@ def get_new_inp(inp):
         for j in range(5):
             for x in range(num_cols):
                 for y in range(num_cols):
-                    node = (x + i*num_cols, y+j*num_rows)
-                    value = ((inp[y][x]+ i + j - 1) % 9 +1)
+                    node = (x + i * num_cols, y + j * num_rows)
+                    value = (inp[y][x] + i + j - 1) % 9 + 1
                     nodes[node] = value
     new_inp = []
     for yy in range(num_rows * 5):
@@ -64,6 +67,7 @@ def get_new_inp(inp):
             new_row.append(nodes[xx, yy])
         new_inp.append(new_row)
     return new_inp
+
 
 def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
@@ -90,8 +94,8 @@ def test_sample_2(self):
 
 
 if __name__ == "__main__":
-    print('*** solving tests ***')
+    print("*** solving tests ***")
     test_sample_1(TestCase())
     test_sample_2(TestCase())
-    print('*** solving main ***')
+    print("*** solving main ***")
     main("input")
