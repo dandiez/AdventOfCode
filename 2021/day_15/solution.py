@@ -52,20 +52,15 @@ def part_2(inp):
 def get_new_inp(inp):
     num_rows = len(inp)
     num_cols = len(inp[0])
-    nodes = dict()
-    for i in range(5):
-        for j in range(5):
-            for x in range(num_cols):
-                for y in range(num_cols):
-                    node = (x + i * num_cols, y + j * num_rows)
-                    value = (inp[y][x] + i + j - 1) % 9 + 1
-                    nodes[node] = value
     new_inp = []
-    for yy in range(num_rows * 5):
-        new_row = []
-        for xx in range(num_cols * 5):
-            new_row.append(nodes[xx, yy])
-        new_inp.append(new_row)
+    for j in range(5):
+        for y in range(num_rows):
+            new_row = []
+            for i in range(5):
+                for x in range(num_cols):
+                    value = (inp[y][x] + i + j - 1) % 9 + 1
+                    new_row.append(value)
+            new_inp.append(new_row)
     return new_inp
 
 
