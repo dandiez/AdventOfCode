@@ -21,7 +21,7 @@ class Packet:
     literal: Optional[int] = None
     length_type_id: Optional[int] = None
     subpacket_lengths: Optional[int] = None
-    subpackets: list["Packet"] = None
+    subpackets: list["Packet"] = dataclasses.field(default_factory=list)
 
 
 def parse(rest: str, n_max=None) -> tuple[list[Packet], str]:
@@ -39,7 +39,7 @@ def parse(rest: str, n_max=None) -> tuple[list[Packet], str]:
     return packets, rest
 
 
-def parse_next(rest):
+def parse_next(rest: str) -> tuple[Packet, str]:
     version_str, rest = pop_n(3, rest)
     version = int(version_str, 2)
     type_id_str, rest = pop_n(3, rest)
@@ -53,7 +53,7 @@ def parse_next(rest):
     return packet, rest
 
 
-def parse_operator(rest, type_id, version):
+def parse_operator(rest: str, type_id: int, version: int) -> tuple[Packet, str]:
     length_type_id_str, rest = pop_n(1, rest)
     length_type_id = int(length_type_id_str, 2)
     if length_type_id == 0:
@@ -82,11 +82,11 @@ def parse_operator(rest, type_id, version):
     return packet, rest
 
 
-def pop_n(n, rest):
+def pop_n(n: int, rest: str) -> tuple[str, str]:
     return rest[:n], rest[n:]
 
 
-def parse_literal_type_4(rest, type_id, version):
+def parse_literal_type_4(rest: str, type_id: int, version: int) -> tuple[Packet, str]:
     fivers = []
     next_fiver, rest = pop_n(5, rest)
     fivers.append(next_fiver)
@@ -102,7 +102,7 @@ def parse_literal_type_4(rest, type_id, version):
     return packet, rest
 
 
-def part_1(inp):
+def part_1(inp) -> int:
     p, rest = parse(as_bin(inp))
     return sum_versions(p)
 
