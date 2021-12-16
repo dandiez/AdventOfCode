@@ -1,7 +1,4 @@
 import dataclasses
-import operator
-from functools import reduce
-from operator import mul
 from typing import Optional
 from unittest import TestCase
 
@@ -38,8 +35,6 @@ def parse(rest: str, n_max=None) -> tuple[list[Packet], str]:
             packets.append(packet)
             n -= 1
         except (KeyError, ValueError):
-            print(f"finish parse. Rest is '{rest}'")
-            rest = ""
             break
     return packets, rest
 
@@ -65,7 +60,7 @@ def parse_operator(rest, type_id, version):
         total_length_in_bits_str, rest = pop_n(15, rest)
         total_length_in_bits = int(total_length_in_bits_str, 2)
         subpacket_bits, rest = pop_n(total_length_in_bits, rest)
-        subpackets, _ = parse(subpacket_bits)
+        subpackets, _ = parse(subpacket_bits)  # discard the rest
         packet = Packet(
             version=version,
             type_id=type_id,
@@ -104,7 +99,6 @@ def parse_literal_type_4(rest, type_id, version):
         bin_literal = bin_literal + fours
     literal = int(bin_literal, 2)
     packet = Packet(version=version, type_id=type_id, literal=literal, subpackets=[])
-
     return packet, rest
 
 
@@ -142,6 +136,7 @@ def calculate(p: Packet):
         # minimum
         return min(calculate(sub_p) for sub_p in p.subpackets)
     elif p.type_id == 3:
+        # maximum
         return max(calculate(sub_p) for sub_p in p.subpackets)
     elif p.type_id == 5:
         return calculate(p.subpackets[0]) > calculate(p.subpackets[1])
@@ -185,16 +180,9 @@ def test_sample_1(self):
     self.assertEqual(23, part_1("C0015000016115A2E0802F182340"))
     self.assertEqual(31, part_1("A0016C880162017C3686B18A3D4780"))
 
-    pass
-
-
-def test_sample_2(self):
-    pass
-
 
 if __name__ == "__main__":
     print("*** solving tests ***")
     test_sample_1(TestCase())
-    test_sample_2(TestCase())
     print("*** solving main ***")
     main("input")
