@@ -125,6 +125,7 @@ def part_2(inp):
     p, rest = parse(as_bin(inp))
     return calculate(p[0])
 
+
 def calculate(p: Packet):
     if p.type_id == 4:
         return p.literal
@@ -150,6 +151,7 @@ def calculate(p: Packet):
         return calculate(p.subpackets[0]) == calculate(p.subpackets[1])
     else:
         raise RuntimeError(p.type_id)
+
 
 def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
