@@ -1,4 +1,7 @@
 import dataclasses
+import operator
+from functools import reduce
+from operator import mul
 from typing import Optional
 from unittest import TestCase
 
@@ -119,8 +122,34 @@ def sum_versions(package_list):
 
 
 def part_2(inp):
-    pass
+    p, rest = parse(as_bin(inp))
+    return calculate(p[0])
 
+def calculate(p: Packet):
+    if p.type_id == 4:
+        return p.literal
+    elif p.type_id == 0:
+        # sum
+        return sum(calculate(sub_p) for sub_p in p.subpackets)
+    elif p.type_id == 1:
+        # product
+        prod = 1
+        for sub_p in p.subpackets:
+            prod *= calculate(sub_p)
+        return prod
+    elif p.type_id == 2:
+        # minimum
+        return min(calculate(sub_p) for sub_p in p.subpackets)
+    elif p.type_id == 3:
+        return max(calculate(sub_p) for sub_p in p.subpackets)
+    elif p.type_id == 5:
+        return calculate(p.subpackets[0]) > calculate(p.subpackets[1])
+    elif p.type_id == 6:
+        return calculate(p.subpackets[0]) < calculate(p.subpackets[1])
+    elif p.type_id == 7:
+        return calculate(p.subpackets[0]) == calculate(p.subpackets[1])
+    else:
+        raise RuntimeError(p.type_id)
 
 def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
