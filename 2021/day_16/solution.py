@@ -46,10 +46,8 @@ def parse_next(rest: str) -> tuple[Packet, str]:
     type_id_str, rest = pop_n(3, rest)
     type_id = int(type_id_str, 2)
     if type_id == 4:
-        # literal
         packet, rest = parse_literal_type_4(rest, type_id, version)
     else:
-        # operator
         packet, rest = parse_operator(rest, type_id, version)
     return packet, rest
 
@@ -125,16 +123,12 @@ def calculate(p: Packet):
     if p.type_id == 4:
         return p.literal
     elif p.type_id == 0:
-        # sum
         return sum(calculate(sub_p) for sub_p in p.subpackets)
     elif p.type_id == 1:
-        # product
         return math.prod(calculate(sub_p) for sub_p in p.subpackets)
     elif p.type_id == 2:
-        # minimum
         return min(calculate(sub_p) for sub_p in p.subpackets)
     elif p.type_id == 3:
-        # maximum
         return max(calculate(sub_p) for sub_p in p.subpackets)
     elif p.type_id == 5:
         return calculate(p.subpackets[0]) > calculate(p.subpackets[1])
