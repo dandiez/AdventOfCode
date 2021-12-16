@@ -128,10 +128,7 @@ def calculate(p: Packet):
         return sum(calculate(sub_p) for sub_p in p.subpackets)
     elif p.type_id == 1:
         # product
-        prod = 1
-        for sub_p in p.subpackets:
-            prod *= calculate(sub_p)
-        return prod
+        return product(calculate(sub_p) for sub_p in p.subpackets)
     elif p.type_id == 2:
         # minimum
         return min(calculate(sub_p) for sub_p in p.subpackets)
@@ -146,6 +143,13 @@ def calculate(p: Packet):
         return calculate(p.subpackets[0]) == calculate(p.subpackets[1])
     else:
         raise RuntimeError(p.type_id)
+
+
+def product(numbers):
+    prod = 1
+    for num in numbers:
+        prod *= num
+    return prod
 
 
 def main(input_file):
