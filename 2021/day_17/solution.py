@@ -10,12 +10,58 @@ def read_input(filename="input"):
 def part_1(inp):
     xmin, xmax, ymin, ymax = inp
     return sum(-(ymin+1)-n for n in range(-ymin))
-    x_good_simulations = {}
-    for vx in range(xmax+1):
-        target_hits, stopped_at_target = simulate_x(vx, xmin, xmax)
-        if target_hits:
-            x_good_simulations[vx] = (target_hits, stopped_at_target)
-    print(x_good_simulations)
+
+class Simulation:
+    def __init__(self, xmin, xmax, ymin, ymax, vx, vy):
+        self.xmin = xmin
+        self.xmax = xmax
+        self.ymin = ymin
+        self.ymax = ymax
+        self.vx = vx
+        self.vy = vy
+        self.x = 0
+        self.y = 0
+        self.num_solutions = 0
+
+    def simulate(self):
+        while True:
+            self.simulate_step()
+            if self.in_target():
+                self.num_solutions+=1
+                break
+            if self.impossible_to_reach():
+                break
+
+    def simulate_step(self):
+        self.x += self.vx
+        self.y += self.vy
+        if self.vx > 0:
+            self.vx -= 1
+        self.vy -= 1
+
+    def in_target(self):
+        x_in = self.xmin <= self.x <= self.xmax
+        y_in = self.ymin <= self.y <= self.ymax
+        return x_in and y_in
+
+    def impossible_to_reach(self):
+        if self.y < self.ymin:
+            return True
+        if self.vx <= 0:
+            if not (self.xmin <= self.x <= self.xmax):
+                return False
+
+
+
+def part_2(inp):
+    xmin, xmax, ymin, ymax = inp
+    num_solutions = 0
+    for vx in range(1, xmax+1):
+        for vy in range(ymin-1, -ymin+2):
+            s = Simulation(xmin, xmax, ymin, ymax, vx, vy)
+            s.simulate()
+            num_solutions += s.num_solutions
+    return num_solutions
 
 
 
@@ -34,8 +80,6 @@ def simulate_x(vx, xmin, xmax):
         if vx <= 0:
             return target_hits, False
 
-def part_2(inp):
-    pass
 
 def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
@@ -53,6 +97,7 @@ def main(input_file):
 def test_sample_1(self):
     inp = read_input("sample_1")
     self.assertEqual(45, part_1(inp))
+    self.assertEqual(112, part_2(inp))
 
 def test_sample_2(self):
     pass
