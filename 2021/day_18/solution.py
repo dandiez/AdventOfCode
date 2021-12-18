@@ -9,15 +9,15 @@ def read_input(filename="input"):
 
 
 def part_1(inp):
-    snake = inp[0]
+    snail = inp[0]
     for s in inp[1:]:
-        snake = sum_snakes(snake, s)
-        snake = reduce(snake)
-    return magnitude(snake)
+        snail = sum_snails(snail, s)
+        snail = reduce(snail)
+    return magnitude(snail)
 
 
-def magnitude(snake):
-    a, b = snake
+def magnitude(snail):
+    a, b = snail
     mag = 0
     if isinstance(a, list):
         mag += 3 * magnitude(a)
@@ -30,19 +30,19 @@ def magnitude(snake):
     return mag
 
 
-def reduce(snake):
-    while level(snake) >= 4:
-        snake = explode(snake)
-    copycat = snake[:]
-    snake = split_snake(snake)
-    if snake == copycat:
-        return snake
+def reduce(snail):
+    while level(snail) >= 4:
+        snail = explode(snail)
+    copycat = snail[:]
+    snail = split_snail(snail)
+    if snail == copycat:
+        return snail
     else:
-        return reduce(snake)
+        return reduce(snail)
 
 
-def level(snake):
-    flat = list_as_flat(snake)
+def level(snail):
+    flat = list_as_flat(snail)
     max_level = max(level for level, value in flat)
     return max_level
 
@@ -63,8 +63,8 @@ def flat_as_list(flat):
     return flat[0][1]
 
 
-def list_as_flat(snake_list, level=0):
-    a, b = snake_list
+def list_as_flat(snail_list, level=0):
+    a, b = snail_list
     if isinstance(a, list):
         flat = list_as_flat(a, level=level + 1)
     else:
@@ -76,8 +76,8 @@ def list_as_flat(snake_list, level=0):
     return flat
 
 
-def explode(snake):
-    flat = list_as_flat(snake)
+def explode(snail):
+    flat = list_as_flat(snail)
     explode_left_index = -1
     explode_right_index = -1
     val_left = None
@@ -103,8 +103,8 @@ def explode(snake):
     return flat_as_list(flat)
 
 
-def split_snake(snake):
-    flat = list_as_flat(snake)
+def split_snail(snail):
+    flat = list_as_flat(snail)
     to_split = []
     for n, (level, value) in enumerate(flat):
         if value >= 10:
@@ -118,16 +118,16 @@ def split_snake(snake):
     return flat_as_list(flat)
 
 
-def sum_snakes(snake_1, snake_2):
-    return [snake_1[:], snake_2[:]]
+def sum_snails(snail_1, snail_2):
+    return [snail_1[:], snail_2[:]]
 
 
 def part_2(inp):
     max_mag = 0
-    for snake_1 in inp:
-        for snake_2 in inp:
-            if snake_1 != snake_2:
-                mag = magnitude(reduce(sum_snakes(snake_1, snake_2)))
+    for snail_1 in inp:
+        for snail_2 in inp:
+            if snail_1 != snail_2:
+                mag = magnitude(reduce(sum_snails(snail_1, snail_2)))
                 max_mag = max(max_mag, mag)
                 if max_mag == mag:
                     print(mag)
@@ -169,7 +169,7 @@ def test_sample_1(self):
     )
     self.assertEqual(
         [[[[0, 7], 4], [[7, 8], [0, 13]]], [1, 1]],
-        split_snake([[[[0, 7], 4], [15, [0, 13]]], [1, 1]]),
+        split_snail([[[[0, 7], 4], [15, [0, 13]]], [1, 1]]),
     )
     self.assertEqual(
         [[[[0, 7], 4], [[7, 8], [6, 0]]], [8, 1]],
