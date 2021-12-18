@@ -64,6 +64,7 @@ def flat_as_list(flat):
 
 
 def list_as_flat(snail_list, level=0):
+    """Flat is a list that stores the [level, value] for all snail values."""
     a, b = snail_list
     if isinstance(a, list):
         flat = list_as_flat(a, level=level + 1)
