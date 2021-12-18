@@ -48,8 +48,7 @@ def level(snail):
 
 
 def flat_as_list(flat):
-    max_level = max(level for level, value in flat)
-    while max_level > -1:
+    while (max_level := max(level for level, value in flat)) > -1:
         for n, (level, value) in enumerate(flat):
             if level == max_level:
                 break
@@ -57,9 +56,6 @@ def flat_as_list(flat):
         if a[0] == b[0]:
             flat[n] = [a[0] - 1, [a[1], b[1]]]
             del flat[n + 1]
-            max_level = max(level for level, value in flat)
-            if max_level == -1:
-                break
     return flat[0][1]
 
 
