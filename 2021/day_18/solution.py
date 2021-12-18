@@ -115,7 +115,15 @@ def sum_snakes(snake_1, snake_2):
     return [snake_1[:], snake_2[:]]
 
 def part_2(inp):
-    pass
+    max_mag = 0
+    for snake_1 in inp:
+        for snake_2 in inp:
+            if snake_1 != snake_2:
+                mag = magnitude(reduce(sum_snakes(snake_1, snake_2)))
+                max_mag=max(max_mag, mag)
+                if max_mag == mag:
+                    print(mag)
+    return max_mag
 
 def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
@@ -131,7 +139,7 @@ def main(input_file):
     return p1, p2
 
 def test_sample_1(self):
-    # inp = read_input("sample_1")
+    inp = read_input("sample_1")
     #self.assertEqual(
     #    [[4, 9], [4, 8], [3, 1], [2, 2], [1, 3], [0, 4]],
     #list_as_flat([[[[[9, 8], 1], 2], 3], 4])
@@ -148,6 +156,7 @@ def test_sample_1(self):
     #self.assertEqual([[[[0,7],4],[[7,8],[6,0]]],[8,1]] , reduce([[[[[4,3],4],4],[7,[[8,4],9]]],[1,1]]))
     self.assertEqual(143, magnitude([[1,2],[[3,4],5]]))
 
+    self.assertEqual(3993, part_2(inp))
 def test_sample_2(self):
     pass
 
