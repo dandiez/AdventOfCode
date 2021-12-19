@@ -1,6 +1,6 @@
 from collections import defaultdict
 from itertools import combinations
-from typing import Optional, Generator, Union
+from typing import Generator, Union, Iterable
 from unittest import TestCase
 
 import networkx as nx
@@ -80,8 +80,9 @@ def scanners_overlap(
         points_2_trans = r.apply(points_2)
         best_shift, num_overlaps = find_best_shift(points_1, points_2_trans)
         if num_overlaps >= 12:
+            rot_matrix = as_int(r.as_matrix())
             transformation = np.block(
-                [[as_int(r.as_matrix()), best_shift], [np.zeros(3, int), np.array([1])]]
+                [[rot_matrix, best_shift], [np.array([0, 0, 0, 1])]]
             )
             return transformation
     return None
@@ -100,9 +101,11 @@ def get_all_rotations() -> Generator[R, None, None]:
     yield from [R.from_euler("yx", [-90, 90 * i], degrees=True) for i in range(4)]
 
 
-def find_best_shift(points_1: list[Point], points_2: list[Point]) -> tuple[Shift, int]:
+def find_best_shift(
+    points_1: Iterable[Point], points_2: Iterable[Point]
+) -> tuple[Shift, int]:
     """Given two clouds of points, find the shift that overlaps most points.
-    The shift is given as column vector.
+
     Also return the number of points overlapping for that shift.
     """
     p1s = [as_int(a) for a in points_1]
