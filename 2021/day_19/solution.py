@@ -1,12 +1,22 @@
 from collections import defaultdict
 from itertools import combinations
+from typing import Optional, Generator
 from unittest import TestCase
 
 import networkx as nx
 import numpy as np
+from nptyping import NDArray
 from numpy.linalg import linalg
 from scipy.spatial.distance import cityblock
 from scipy.spatial.transform import Rotation as R
+
+TMatrix = NDArray[(4, 4), int]
+Point = NDArray[(3,), int]
+Shift = NDArray[(3, 1), int]
+ScannerID = int
+ScannerPoints = dict[ScannerID, list[Point]]
+ScannerTMatrices = dict[ScannerID, TMatrix]
+ScannerRelTMatrices = dict[tuple[ScannerID, ScannerID] : TMatrix]
 
 
 def main(input_file):
@@ -20,16 +30,16 @@ def main(input_file):
     return p1, p2
 
 
-def read_input(filename="input"):
+def read_input(filename: str = "input") -> ScannerPoints:
     with open(filename) as f:
         lines = [line.strip() for line in f.readlines() if line.strip()]
     return parse_inp(lines)
 
 
-def parse_inp(inp):
+def parse_inp(lines: list[str]) -> ScannerPoints:
     raw = defaultdict(list)
     n = -1
-    for line in inp:
+    for line in lines:
         if "scanner" in line:
             n += 1
             continue
@@ -37,14 +47,14 @@ def parse_inp(inp):
     return raw
 
 
-def get_all_transformations(inp):
+def get_all_transformations(inp: ScannerPoints) -> ScannerTMatrices:
     """Find transf. matrices for all scanners. Absolute is scanner zero."""
     rel_transf = find_rel_transformations(inp)
     abs_transf = find_abs_transformations(rel_transf)
     return abs_transf
 
 
-def find_rel_transformations(inp):
+def find_rel_transformations(inp: ScannerPoints) -> ScannerRelTMatrices:
     """Return dict of transformation matrices across overlapping scanners.
     { (i, j): np.array() }
     """
@@ -58,7 +68,7 @@ def find_rel_transformations(inp):
     return overlaps
 
 
-def scanners_overlap(points_1, points_2):
+def scanners_overlap(points_1: list[Point], points_2: list[Point]) -> [TMatrix, None]:
     """Figure out if scanners have an overlap of common points.
 
     Return the transformation matrix for the overlap.
@@ -72,13 +82,14 @@ def scanners_overlap(points_1, points_2):
                 [[as_int(r.as_matrix()), best_shift], [np.zeros(3, int), np.array([1])]]
             )
             return transformation
+    return None
 
 
-def as_int(arr):
+def as_int(arr: np.ndarray) -> NDArray[int]:
     return np.rint(arr).astype(int)
 
 
-def get_all_rotations():
+def get_all_rotations() -> Generator[R, None, None]:
     yield from [R.from_euler("x", 90 * i, degrees=True) for i in range(4)]
     yield from [R.from_euler("zx", [90, 90 * i], degrees=True) for i in range(4)]
     yield from [R.from_euler("zx", [180, 90 * i], degrees=True) for i in range(4)]
@@ -87,7 +98,7 @@ def get_all_rotations():
     yield from [R.from_euler("yx", [-90, 90 * i], degrees=True) for i in range(4)]
 
 
-def find_best_shift(points_1, points_2):
+def find_best_shift(points_1: list[Point], points_2: list[Point]) -> tuple[Shift, int]:
     """Given two clouds of points, find the shift that overlaps most points.
     The shift is given as column vector.
     Also return the number of points overlapping for that shift.
@@ -104,7 +115,7 @@ def find_best_shift(points_1, points_2):
             return np.array([shift], int).T, num_overlapping
 
 
-def find_abs_transformations(overlaps):
+def find_abs_transformations(overlaps: ScannerRelTMatrices) -> ScannerTMatrices:
     """Chain transformations to arrive at any target from the zero scanner."""
     transformations = {}
     G = nx.Graph()
