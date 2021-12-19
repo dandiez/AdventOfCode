@@ -1,6 +1,6 @@
 from collections import defaultdict
 from itertools import combinations
-from typing import Optional, Generator
+from typing import Optional, Generator, Union
 from unittest import TestCase
 
 import networkx as nx
@@ -16,7 +16,7 @@ Shift = NDArray[(3, 1), int]
 ScannerID = int
 ScannerPoints = dict[ScannerID, list[Point]]
 ScannerTMatrices = dict[ScannerID, TMatrix]
-ScannerRelTMatrices = dict[tuple[ScannerID, ScannerID] : TMatrix]
+ScannerRelTMatrices = dict[tuple[ScannerID, ScannerID], TMatrix]
 
 
 def main(input_file):
@@ -59,7 +59,7 @@ def find_rel_transformations(inp: ScannerPoints) -> ScannerRelTMatrices:
     { (i, j): np.array() }
     """
     num_scanners = len(inp)
-    overlaps = {}
+    overlaps: ScannerRelTMatrices = {}
     for i, j in combinations(range(num_scanners), 2):
         transformation = scanners_overlap(inp[i], inp[j])
         if transformation is not None:
@@ -68,7 +68,9 @@ def find_rel_transformations(inp: ScannerPoints) -> ScannerRelTMatrices:
     return overlaps
 
 
-def scanners_overlap(points_1: list[Point], points_2: list[Point]) -> [TMatrix, None]:
+def scanners_overlap(
+    points_1: list[Point], points_2: list[Point]
+) -> Union[TMatrix, None]:
     """Figure out if scanners have an overlap of common points.
 
     Return the transformation matrix for the overlap.
@@ -105,7 +107,7 @@ def find_best_shift(points_1: list[Point], points_2: list[Point]) -> tuple[Shift
     """
     p1s = [as_int(a) for a in points_1]
     p2s = [as_int(a) for a in points_2]
-    shifts = defaultdict(int)
+    shifts: dict[tuple[int, int, int], int] = defaultdict(int)
     for p1 in p1s:
         for p2 in p2s:
             shifts[tuple(p1 - p2)] += 1
@@ -113,6 +115,7 @@ def find_best_shift(points_1: list[Point], points_2: list[Point]) -> tuple[Shift
     for shift, num_overlapping in shifts.items():
         if num_overlapping == max_points_overlapping:
             return np.array([shift], int).T, num_overlapping
+    raise RuntimeError()
 
 
 def find_abs_transformations(overlaps: ScannerRelTMatrices) -> ScannerTMatrices:
@@ -120,7 +123,7 @@ def find_abs_transformations(overlaps: ScannerRelTMatrices) -> ScannerTMatrices:
     transformations = {}
     G = nx.Graph()
     G.add_edges_from(overlaps.keys())
-    paths = nx.shortest_path(G, source=0)
+    paths: dict[int, list[int]] = nx.shortest_path(G, source=0)
     for target, path in paths.items():
         trn = np.identity(4, int)
         for n in range(len(path) - 1):
