@@ -5,6 +5,7 @@ from unittest import TestCase
 import networkx as nx
 import numpy as np
 from numpy.linalg import linalg
+from scipy.spatial.distance import cityblock
 from scipy.spatial.transform import Rotation
 
 
@@ -44,7 +45,22 @@ def part_1(inp):
     overlap_transformations = trans_overlapping(inp)
     transformations = trans_rel_to_0(overlap_transformations)
     abs_point_coords = all_points_rel_to_0(inp, transformations)
+    max_d = find_largest_manhattan(transformations)
+    print(max_d)
     return len(abs_point_coords)
+
+
+def find_largest_manhattan(transformations):
+    max_d = 0
+    for i, vi in transformations.items():
+        for j, vj in transformations.items():
+            if i == j:
+                continue
+            pi = vi[:, -1]
+            pj = vj[:, -1]
+            d = cityblock(pi, pj)
+            max_d = max(max_d, d)
+    return max_d
 
 
 def trans_overlapping(inp):
@@ -125,9 +141,6 @@ def all_points_rel_to_0(inp, transformations):
         abs_points.update(abs_csys_points)
     return abs_points
 
-
-def part_2(inp):
-    pass
 
 
 def main(input_file):
