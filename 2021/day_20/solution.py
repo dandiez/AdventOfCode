@@ -13,12 +13,17 @@ def read_input(filename="input"):
 
 
 def part_1(inp):
+    return enhance_n_times(inp, 2)
+
+
+def enhance_n_times(inp, n):
     filter, image_raw = inp
     image = BWImage.from_raw(image_raw)
-    for n in range(2):
+    for n in range(n):
         image.enhance(filter)
     image.render()
     return len(image.pixels)
+
 
 @dataclasses.dataclass
 class BWImage:
@@ -58,7 +63,6 @@ class BWImage:
             for c in range(self.min_c - pad, self.max_c + 1 + pad):
                 line += ".#"[(r, c) in self.pixels]
             print(line)
-
 
     def enhance(self, filter: set):
         pad = 10
@@ -159,8 +163,9 @@ def neighbours(r0, c0):
         for c in range(c0 - 1, c0 + 2):
             yield r, c
 
+
 def part_2(inp):
-    pass
+    return enhance_n_times(inp, 50)
 
 
 def main(input_file):
@@ -189,6 +194,6 @@ def test_sample_2(self):
 if __name__ == "__main__":
     print("*** solving tests ***")
     # test_sample_1(TestCase())
-    #test_sample_2(TestCase())
+    # test_sample_2(TestCase())
     print("*** solving main ***")
     main("input")
