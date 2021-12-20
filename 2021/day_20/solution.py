@@ -64,7 +64,7 @@ class BWImage:
             print(line)
 
     def enhance(self, filter: set):
-        pad = 10
+        pad = 4
         self.add_padding(pad)
         self.apply_filter(filter)
         self.crop_edges()
