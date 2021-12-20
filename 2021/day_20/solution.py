@@ -30,12 +30,13 @@ def read_input(filename="input"):
 @dataclasses.dataclass
 class BWImage:
     """Black and white image. Stores in pixels the white pixel coordinates."""
+
     pixels: set[tuple[int, int]]
     background: bool = False  # False is black, True is white.
-    min_r: int = 9e99
-    max_r: int = -9e99
-    min_c: int = 9e99
-    max_c: int = -9e99
+    min_r: int = dataclasses.field(init=False)
+    max_r: int = dataclasses.field(init=False)
+    min_c: int = dataclasses.field(init=False)
+    max_c: int = dataclasses.field(init=False)
 
     def __post_init__(self):
         self.min_r, self.max_r, self.min_c, self.max_c = self.get_bounds(self.pixels)
