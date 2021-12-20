@@ -73,15 +73,16 @@ class BWImage:
             self.enhance_once(filter)
 
     def enhance_once(self, filter):
-        pad = 4
+        pad = 4  # 3 background padding + 1 for image growth
         self.add_padding(pad)
         self.apply_filter(filter)
-        self.crop_edges()
+        self.crop_edges(pad - 1)
         self.enhance_background(filter)
         self.simplify_bounds()
 
     def apply_filter(self, filter):
         enhanced = set()
+        # pad = -3 because background padding will be cropped
         for pixel in self.scan_image(pad=-3):
             if new_pixel_at_loc(pixel, self.pixels, filter):
                 enhanced.add(pixel)
@@ -116,7 +117,7 @@ class BWImage:
         c_in = self.min_c <= c <= self.max_c
         return r_in and c_in
 
-    def crop_edges(self, quantity=3):
+    def crop_edges(self, quantity):
         self.min_r += quantity
         self.min_c += quantity
         self.max_r -= quantity
