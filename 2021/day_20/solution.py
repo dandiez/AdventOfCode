@@ -29,8 +29,9 @@ def read_input(filename="input"):
 
 @dataclasses.dataclass
 class BWImage:
-    pixels: set
-    background: bool = False
+    """Black and white image. Stores in pixels the white pixel coordinates."""
+    pixels: set[tuple[int, int]]
+    background: bool = False  # False is black, True is white.
     min_r: int = 9e99
     max_r: int = -9e99
     min_c: int = 9e99
