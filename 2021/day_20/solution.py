@@ -21,7 +21,6 @@ def enhance_n_times(inp, n):
     image = BWImage.from_raw(image_raw)
     for n in range(n):
         image.enhance(filter)
-    image.render()
     return len(image.pixels)
 
 
