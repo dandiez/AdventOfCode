@@ -4,24 +4,27 @@ from unittest import TestCase
 BINARY_ADDENDS = tuple(2 ** n for n in reversed(range(9)))
 
 
+def main(input_file):
+    """Solve puzzle and connect part 1 with part 2 if needed."""
+    inp = read_input(input_file)
+    filter, image_raw = inp
+    image = BWImage.from_raw(image_raw)
+
+    image.enhance(filter, num_times=2)
+    p1 = len(image.pixels)
+    print(f"Solution to part 1: {p1}")
+    image.enhance(filter, num_times=48)
+    p2 = len(image.pixels)
+    print(f"Solution to part 2: {p2}")
+    return p1, p2
+
+
 def read_input(filename="input"):
     with open(filename) as f:
         lines = [line.strip() for line in f.readlines() if line.strip()]
     filter = {n for n, char in enumerate(lines[0]) if char == "#"}
     image = lines[1:]
     return filter, image
-
-
-def part_1(inp):
-    return enhance_n_times(inp, 2)
-
-
-def enhance_n_times(inp, n):
-    filter, image_raw = inp
-    image = BWImage.from_raw(image_raw)
-    for n in range(n):
-        image.enhance(filter)
-    return len(image.pixels)
 
 
 @dataclasses.dataclass
@@ -63,7 +66,11 @@ class BWImage:
                 line += ".#"[(r, c) in self.pixels]
             print(line)
 
-    def enhance(self, filter: set):
+    def enhance(self, filter: set, num_times=1):
+        for _ in range(num_times):
+            self.enhance_once(filter)
+
+    def enhance_once(self, filter):
         pad = 4
         self.add_padding(pad)
         self.apply_filter(filter)
@@ -73,9 +80,9 @@ class BWImage:
 
     def apply_filter(self, filter):
         enhanced = set()
-        for r, c in self.scan_image(pad=-3):
-            if new_pixel_at_loc((r, c), self.pixels, filter):
-                enhanced.add((r, c))
+        for pixel in self.scan_image(pad=-3):
+            if new_pixel_at_loc(pixel, self.pixels, filter):
+                enhanced.add(pixel)
         self.pixels = enhanced
         return enhanced
 
@@ -163,36 +170,12 @@ def neighbours(r0, c0):
             yield r, c
 
 
-def part_2(inp):
-    return enhance_n_times(inp, 50)
-
-
-def main(input_file):
-    """Solve puzzle and connect part 1 with part 2 if needed."""
-    # part 1
-    inp = read_input(input_file)
-    p1 = part_1(inp)
-    print(f"Solution to part 1: {p1}")
-
-    # part 2
-    inp = read_input(input_file)
-    p2 = part_2(inp)
-    print(f"Solution to part 2: {p2}")
-    return p1, p2
-
-
 def test_sample_1(self):
-    inp = read_input("sample_1")
-    self.assertEqual(35, part_1(inp))
-
-
-def test_sample_2(self):
-    pass
+    self.assertEqual((35, 3351), main("sample_1"))
 
 
 if __name__ == "__main__":
     print("*** solving tests ***")
-    # test_sample_1(TestCase())
-    # test_sample_2(TestCase())
+    test_sample_1(TestCase())
     print("*** solving main ***")
     main("input")
