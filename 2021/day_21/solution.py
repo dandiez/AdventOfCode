@@ -1,3 +1,5 @@
+from collections import defaultdict
+from functools import lru_cache
 from itertools import cycle
 from unittest import TestCase
 
@@ -46,6 +48,44 @@ class PracticeGame:
         new = old_pos + roll
         return (new - 1) % 10 + 1
 
+def play_turn(game_state, roll):
+    pos_1, pos_2, points_1, points_2, player_turn, is_won = game_state
+    if player_turn == True:
+        pos_1 = (pos_1 + roll - 1) % 10 + 1
+        points_1 += pos_1
+        is_won = points_1 >= 21
+    else:
+        pos_2 = (pos_2 + roll - 1) % 10 + 1
+        points_2 += pos_2
+        is_won = points_2 >= 21
+    return pos_1, pos_2, points_1, points_2, not player_turn, is_won
+
+@lru_cache(None)
+def play_game(game_state: tuple):
+    return play_turn(game_state, 1), play_turn(game_state, 2), play_turn(game_state, 3)
+
+
+
+class DiracGame:
+
+    def __init__(self, pos_1, pos_2):
+        self.live_games = defaultdict(int)
+        self.live_games[(pos_1, pos_2, 0, 0, True, False)] += 1
+        self.win_count = defaultdict(int)
+
+    def play(self):
+        while sum(self.live_games.values()):
+            print(self.live_games)
+            game, count = self.live_games.popitem()
+            new_games = play_game(game)
+            for game in new_games:
+                pos_1, pos_2, points_1, points_2, player_turn, is_won = game
+                if is_won:
+                    self.win_count[player_turn] += count
+                else:
+                    self.live_games[game] += count
+        return max(self.win_count.values())
+
 
 def part_1(inp):
     game = PracticeGame(*inp)
@@ -53,7 +93,8 @@ def part_1(inp):
 
 
 def part_2(inp):
-    pass
+    game = DiracGame(*inp)
+    return game.play()
 
 
 def main(input_file):
@@ -73,6 +114,7 @@ def main(input_file):
 def test_sample_1(self):
     inp = read_input("sample_1")
     self.assertEqual(739785, part_1(inp))
+    self.assertEqual(444356092776315, part_2(inp))
 
 
 def test_sample_2(self):
