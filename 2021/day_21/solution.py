@@ -1,7 +1,22 @@
+import dataclasses
 from collections import defaultdict
 from functools import lru_cache
 from itertools import cycle
 from unittest import TestCase
+
+
+def main(input_file):
+    """Solve puzzle and connect part 1 with part 2 if needed."""
+    # part 1
+    inp = read_input(input_file)
+    p1 = part_1(inp)
+    print(f"Solution to part 1: {p1}")
+
+    # part 2
+    inp = read_input(input_file)
+    p2 = part_2(inp)
+    print(f"Solution to part 2: {p2}")
+    return p1, p2
 
 
 def read_input(filename="input"):
@@ -11,9 +26,14 @@ def read_input(filename="input"):
     return inp
 
 
-def cyclic_d100():
-    for n in cycle(range(1, 101)):
-        yield n
+def part_1(inp):
+    game = PracticeGame(*inp)
+    return game.play()
+
+
+def part_2(inp):
+    game = DiracGame(*inp)
+    return game.play()
 
 
 class PracticeGame:
@@ -21,7 +41,7 @@ class PracticeGame:
         self.player_pos = [p1_start, p2_start]
         self.player_points = [0, 0]
         self.roll_count = 0
-        self.die = cyclic_d100()
+        self.die = (n for n in cycle(range(1, 101)))
         self.num_players = len(self.player_points)
 
     def roll(self):
@@ -49,11 +69,51 @@ class PracticeGame:
         return (new - 1) % 10 + 1
 
 
-def dirac_3d3_one_by_one():
-    for i in range(1, 4):
-        for j in range(1, 4):
-            for k in range(1, 4):
-                yield i + j + k
+PlayerID = bool
+Count = int
+
+
+@dataclasses.dataclass(frozen=True)
+class GameState:
+    positions: tuple[int, int]
+    points: tuple[int, int]
+    player_turn: PlayerID
+    is_won: bool
+
+
+class DiracGame:
+    def __init__(self, pos_1, pos_2):
+        self.live_games: defaultdict[GameState, Count] = defaultdict(int)
+        starting_state = GameState(
+            positions=(pos_1, pos_2), points=(0, 0), player_turn=False, is_won=False
+        )
+        self.live_games[starting_state] += 1
+        self.win_count: dict[PlayerID, Count] = defaultdict(int)
+
+    def play(self):
+        while self.live_games:
+            game, count = pop_fifo(self.live_games)
+            new_games = get_new_game_states(game)
+            for number_of, game in new_games:
+                if game.is_won:
+                    self.win_count[game.player_turn] += count * number_of
+                else:
+                    self.live_games[game] += count * number_of
+        return max(self.win_count.values())
+
+
+def pop_fifo(_dict):
+    k, v = next(iter(_dict.items()))
+    del _dict[k]
+    return k, v
+
+
+@lru_cache(None)
+def get_new_game_states(game_state: GameState):
+    new = set()
+    for roll_outcome, count in dirac_3d3_all().items():
+        new.add((count, get_new_state(game_state, roll_outcome)))
+    return new
 
 
 @lru_cache(None)
@@ -64,75 +124,27 @@ def dirac_3d3_all():
     return roll_outcomes
 
 
-@lru_cache(None)
-def get_new_state(game_state, roll, win_target=21):
-    pos_1, pos_2, points_1, points_2, player_turn, is_won = game_state
-    if player_turn == True:
-        pos_1 = (pos_1 + roll - 1) % 10 + 1
-        points_1 += pos_1
-        is_won = points_1 >= win_target
-    else:
-        pos_2 = (pos_2 + roll - 1) % 10 + 1
-        points_2 += pos_2
-        is_won = points_2 >= win_target
-    return pos_1, pos_2, points_1, points_2, not player_turn, is_won
+def dirac_3d3_one_by_one():
+    for i in range(1, 4):
+        for j in range(1, 4):
+            for k in range(1, 4):
+                yield i + j + k
 
 
 @lru_cache(None)
-def get_new_game_states(game_state: tuple):
-    new = set()
-    for roll_outcome, count in dirac_3d3_all().items():
-        new.add((count, get_new_state(game_state, roll_outcome)))
-    return new
-
-
-def pop_fifo(_dict):
-    k, v = next(iter(_dict.items()))
-    del _dict[k]
-    return k, v
-
-
-class DiracGame:
-    def __init__(self, pos_1, pos_2):
-        self.live_games = defaultdict(int)
-        self.live_games[(pos_1, pos_2, 0, 0, True, False)] += 1
-        self.win_count = defaultdict(int)
-
-    def play(self):
-        while sum(self.live_games.values()):
-            game, count = pop_fifo(self.live_games)
-            new_games = get_new_game_states(game)
-            for number_of, game in new_games:
-                pos_1, pos_2, points_1, points_2, player_turn, is_won = game
-                if is_won:
-                    self.win_count[player_turn] += count * number_of
-                else:
-                    self.live_games[game] += count * number_of
-        return max(self.win_count.values())
-
-
-def part_1(inp):
-    game = PracticeGame(*inp)
-    return game.play()
-
-
-def part_2(inp):
-    game = DiracGame(*inp)
-    return game.play()
-
-
-def main(input_file):
-    """Solve puzzle and connect part 1 with part 2 if needed."""
-    # part 1
-    inp = read_input(input_file)
-    p1 = part_1(inp)
-    print(f"Solution to part 1: {p1}")
-
-    # part 2
-    inp = read_input(input_file)
-    p2 = part_2(inp)
-    print(f"Solution to part 2: {p2}")
-    return p1, p2
+def get_new_state(game_state: GameState, roll, win_target=21):
+    pos = list(game_state.positions)
+    points = list(game_state.points)
+    player = game_state.player_turn
+    pos[player] = (pos[player] + roll - 1) % 10 + 1
+    points[player] += pos[player]
+    is_won = points[player] >= win_target
+    return GameState(
+        positions=tuple(pos),
+        points=tuple(points),
+        player_turn=not player,
+        is_won=is_won,
+    )
 
 
 def test_sample_1(self):
