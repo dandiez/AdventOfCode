@@ -49,12 +49,18 @@ class PracticeGame:
         return (new - 1) % 10 + 1
 
 
-def dirac_3d3():
+def dirac_3d3_one_by_one():
     for i in range(1, 4):
         for j in range(1, 4):
             for k in range(1, 4):
                 yield i + j + k
 
+@lru_cache(None)
+def dirac_3d3_all():
+    roll_outcomes = defaultdict(int)
+    for roll_outcome in dirac_3d3_one_by_one():
+        roll_outcomes[roll_outcome] += 1
+    return roll_outcomes
 
 @lru_cache(None)
 def get_new_state(game_state, roll, win_target=21):
@@ -73,8 +79,8 @@ def get_new_state(game_state, roll, win_target=21):
 @lru_cache(None)
 def get_new_game_states(game_state: tuple):
     new = []
-    for roll_outcome in dirac_3d3():
-        new.append(get_new_state(game_state, roll_outcome))
+    for roll_outcome, count in dirac_3d3_all().items():
+        new.append((count, get_new_state(game_state, roll_outcome)))
     return new
 
 
@@ -88,12 +94,12 @@ class DiracGame:
         while sum(self.live_games.values()):
             game, count = self.live_games.popitem()
             new_games = get_new_game_states(game)
-            for game in new_games:
+            for number_of, game in new_games:
                 pos_1, pos_2, points_1, points_2, player_turn, is_won = game
                 if is_won:
-                    self.win_count[player_turn] += count
+                    self.win_count[player_turn] += count*number_of
                 else:
-                    self.live_games[game] += count
+                    self.live_games[game] += count*number_of
         return max(self.win_count.values())
 
 
