@@ -66,10 +66,12 @@ def roll_outcomes():
 @lru_cache(None)
 def get_new_game_states(game_state: tuple, practice=False):
     if practice:
-        yield play_turn(game_state, cyclic_3d100(), win_target=1000)
+        return  (play_turn(game_state, cyclic_3d100(), win_target=1000),)
     else:
+        new = []
         for roll_outcome in roll_outcomes():
-            yield play_turn(game_state, roll_outcome)
+            new.append(play_turn(game_state, roll_outcome))
+        return tuple(new)
 
 class DiracGame:
 
