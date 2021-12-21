@@ -96,7 +96,7 @@ class DiracGame:
             new_games = get_new_game_states(game)
             for number_of, game in new_games:
                 if game.is_won:
-                    self.win_count[game.player_turn] += count * number_of
+                    self.win_count[not game.player_turn] += count * number_of
                 else:
                     self.live_games[game] += count * number_of
         return max(self.win_count.values())
