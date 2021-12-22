@@ -1,4 +1,5 @@
 import dataclasses
+from functools import lru_cache
 from unittest import TestCase
 
 from parse import parse
@@ -34,6 +35,13 @@ class Cube:
     def z_coords(self):
         return [self.zmin, self.zmax]
 
+    def all_points(self):
+        for x in range(self.xmin, self.xmax):
+            for y in range(self.ymin, self.ymax):
+                for z in range(self.zmin, self.zmax):
+                    yield x, y, z
+
+    @lru_cache()
     def is_valid(self):
         x_ok = self.xmin <= self.xmax
         y_ok = self.ymin <= self.ymax
@@ -116,32 +124,108 @@ class Cube:
 
     def count(self):
         return (
-            (self.xmax - self.xmin + 1)
-            * (self.ymax - self.ymin + 1)
-            * (self.zmax - self.zmin + 1)
+                (self.xmax - self.xmin + 1)
+                * (self.ymax - self.ymin + 1)
+                * (self.zmax - self.zmin + 1)
         )
 
+    def merge(self, other):
+        within_dx = self.xmin == other.xmin and self.xmax == other.xmax
+        within_dy = self.ymin == other.ymin and self.ymax == other.ymax
+        within_dz = self.zmin == other.zmin and self.zmax == other.zmax
+        if within_dz and within_dy:
+            if self.xmax + 1 == other.xmin:
+                return Cube(
+                    self.xmin, other.xmax, self.ymin, other.ymax, self.zmin, other.zmax
+                )
+            elif other.xmax + 1 == self.xmin:
+                return Cube(
+                    other.xmin, self.xmax, other.ymin, self.ymax, other.zmin, self.zmax
+                )
+        elif within_dx and within_dy:
+            if self.zmax + 1 == other.zmin:
+                return Cube(
+                    self.xmin, other.xmax, self.ymin, other.ymax, self.zmin, other.zmax
+                )
+            elif other.zmax + 1 == self.zmin:
+                return Cube(
+                    other.xmin, self.xmax, other.ymin, self.ymax, other.zmin, self.zmax
+                )
+        elif within_dz and within_dx:
+            if self.ymax + 1 == other.ymin:
+                return Cube(
+                    self.xmin, other.xmax, self.ymin, other.ymax, self.zmin, other.zmax
+                )
+            elif other.ymax + 1 == self.ymin:
+                return Cube(
+                    other.xmin, self.xmax, other.ymin, self.ymax, other.zmin, self.zmax
+                )
+        return None
 
+    def difference(self, other):
+        """Given another cube, split this one and only keep the parts not in common with the other."""
+        split_self = Space.split_by_cube({self}, other)
+        remaining = {split for split in split_self if not split.contained_in_cube(other)}
+        return remaining
 @dataclasses.dataclass
 class Operation:
     cube: Cube
     state: bool
 
 
+InitCube = Cube(-50, 50, -50, 50, -50, 50)
+
+
 @dataclasses.dataclass
 class Space:
     regions: set[Cube]
 
-    def apply_operation(self, operation: Operation):
-        print(operation, len(self.regions), sum(c.count() for c in self.regions))
-        cube = operation.cube
+    @staticmethod
+    def count(regions):
+        return sum(r.count() for r in regions)
 
-        self.regions = Space.split_by_cube(self.regions, cube)
-        subcubes = Space.split_by_many_cubes({cube}, self.regions)
+    def apply_operation(self, operation: Operation, init=True):
+        cube = operation.cube
+        if init:
+            if not cube.contained_in_cube(InitCube):
+                return
+        print(operation, len(self.regions), sum(c.count() for c in self.regions))
         if operation.state is True:
-            self.regions.update(subcubes)
+            subcubes = Space.split_by_many_cubes({cube}, self.regions)
+            skip = set()
+            for cube in subcubes:
+                for region in self.regions:
+                    if cube.contained_in_cube(region):
+                        skip.add(cube)
+            not_skipped = subcubes.difference(skip)
+            self.regions.update(not_skipped)
         else:
-            self.regions.difference_update(subcubes)
+            # self.regions = Space.split_by_cube(self.regions, cube)
+            self.regions = self.subtract_cube_from_regions(self.regions, cube)
+
+        print("Before: ", len(self.regions), sum(c.count() for c in self.regions))
+        self.regions = Space.stubborn_simplify(self.regions)
+        print("After: ", len(self.regions), sum(c.count() for c in self.regions))
+        for c in self.regions:
+            assert c.is_valid()
+        self.assert_valid_region()
+
+    @staticmethod
+    def subtract_cube_from_regions(regions, cube):
+        # subcubes = Space.split_by_many_cubes({cube}, regions)
+        new_regions = set()
+        while regions:
+            region: Cube = regions.pop()
+            new_regions.update(region.difference(cube))
+        return new_regions
+
+
+
+    def assert_valid_region(self):
+        for r in self.regions:
+            for rr in self.regions:
+                if r != rr:
+                    assert r.do_not_overlap_for_sure(rr), f"{r}, {rr}"
 
     @staticmethod
     def split_by_many_cubes(regions: set[Cube], cubes: set[Cube]):
@@ -159,7 +243,6 @@ class Space:
                 regions_to_keep.add(r)
             else:
                 regions_to_split.add(r)
-
         regions = regions_to_split
         for x in cube.x_coords():
             regions = Space.split_at_x(regions, x)
@@ -206,6 +289,46 @@ class Space:
                 num += region.count()
         return num
 
+    @staticmethod
+    def simplify(regions):
+        non_simplifiable = set()
+        while regions:
+            reg = regions.pop()
+            merged, merge_happened = Space.merge(regions, reg)
+            if not merge_happened:
+                non_simplifiable.add(reg)
+                regions = merged
+            else:
+                regions = merged
+        return non_simplifiable
+
+    @staticmethod
+    def stubborn_simplify(regions):
+        num = len(regions)
+        while True:
+            regions = Space.simplify(regions)
+            if num == len(regions):
+                break
+            else:
+                num = len(regions)
+        return regions
+
+    @staticmethod
+    def merge(regions: set[Cube], to_merge: Cube):
+        merged_set = set()
+        merge_happened = False
+        while regions:
+            other = regions.pop()
+            merged = to_merge.merge(other)
+            if merged is not None:
+                merged_set.add(merged)
+                merge_happened = True
+                merged_set.update(regions)
+                break
+            else:
+                merged_set.add(other)
+        return merged_set, merge_happened
+
 
 def part_1(inp):
     operations = []
@@ -217,7 +340,7 @@ def part_1(inp):
     space = Space(regions=set())
     for operation in operations:
         space.apply_operation(operation)
-    return space.count_within(Cube(-50, 50, -50, 50, -50, 50))
+    return space.count_within(InitCube)
 
 
 def part_2(inp):
@@ -259,6 +382,75 @@ def test_sample_1(self):
             Cube(11, 11, 11, 11, 10, 10),
         ),
     )
+    self.assertEqual({Cube(9, 11, 11, 11, 9, 10)}, Space.simplify(
+        {Cube(xmin=9, xmax=11, ymin=11, ymax=11, zmin=10, zmax=10),
+         Cube(xmin=9, xmax=11, ymin=11, ymax=11, zmin=9, zmax=9)}
+    ))
+    self.assertEqual({Cube(9, 11, 9, 11, 9, 11)}, Space.stubborn_simplify({
+        Cube(xmin=11, xmax=11, ymin=9, ymax=10, zmin=11, zmax=11),
+        Cube(xmin=11, xmax=11, ymin=11, ymax=11, zmin=10, zmax=10),
+        Cube(xmin=9, xmax=10, ymin=11, ymax=11, zmin=10, zmax=10),
+        Cube(xmin=11, xmax=11, ymin=9, ymax=10, zmin=10, zmax=10),
+        Cube(xmin=9, xmax=10, ymin=9, ymax=10, zmin=10, zmax=10),
+        Cube(xmin=9, xmax=10, ymin=11, ymax=11, zmin=9, zmax=9),
+        Cube(xmin=9, xmax=10, ymin=9, ymax=10, zmin=9, zmax=9),
+        Cube(xmin=9, xmax=10, ymin=11, ymax=11, zmin=11, zmax=11),
+        Cube(xmin=9, xmax=10, ymin=9, ymax=10, zmin=11, zmax=11),
+        Cube(xmin=11, xmax=11, ymin=11, ymax=11, zmin=9, zmax=9),
+        Cube(xmin=11, xmax=11, ymin=9, ymax=10, zmin=9, zmax=9),
+        Cube(xmin=11, xmax=11, ymin=11, ymax=11, zmin=11, zmax=11),
+    }))
+    self.assertEqual(
+        Cube(1, 2, 3, 3, 3, 3), Cube(1, 1, 3, 3, 3, 3).merge(Cube(2, 2, 3, 3, 3, 3))
+    )
+    self.assertEqual({Cube(1,2, 1,2, 1,2)}, Space.stubborn_simplify(
+        {
+            Cube(i, i, j, j, k ,k ) for i in range(1,3) for j in range(1,3) for k in range(1, 3)
+        }
+    ))
+    self.assertEqual(Cube(xmin=9, xmax=11, ymin=9, ymax=11, zmin=9, zmax=11).count(),
+             sum(cube.count() for cube in  Space.stubborn_simplify({Cube(xmin=10, xmax=10, ymin=11, ymax=11, zmin=10, zmax=10),
+                                              Cube(xmin=11, xmax=11, ymin=9, ymax=9, zmin=10, zmax=10),
+                                              Cube(xmin=9, xmax=9, ymin=9, ymax=10, zmin=10, zmax=10),
+                                              Cube(xmin=9, xmax=9, ymin=11, ymax=11, zmin=9, zmax=9),
+                                              Cube(xmin=11, xmax=11, ymin=10, ymax=10, zmin=11, zmax=11),
+                                              Cube(xmin=10, xmax=10, ymin=10, ymax=10, zmin=10, zmax=10),
+                                              Cube(xmin=11, xmax=11, ymin=9, ymax=9, zmin=11, zmax=11),
+                                              Cube(xmin=9, xmax=9, ymin=11, ymax=11, zmin=11, zmax=11),
+                                              Cube(xmin=10, xmax=10, ymin=9, ymax=10, zmin=9, zmax=9),
+                                              Cube(xmin=11, xmax=11, ymin=9, ymax=10, zmin=9, zmax=9),
+                                              Cube(xmin=10, xmax=10, ymin=11, ymax=11, zmin=9, zmax=9),
+                                              Cube(xmin=10, xmax=10, ymin=11, ymax=11, zmin=11, zmax=11),
+                                              Cube(xmin=11, xmax=11, ymin=11, ymax=11, zmin=10, zmax=10),
+                                              Cube(xmin=10, xmax=10, ymin=9, ymax=9, zmin=10, zmax=10),
+                                              Cube(xmin=11, xmax=11, ymin=10, ymax=10, zmin=10, zmax=10),
+                                              Cube(xmin=9, xmax=9, ymin=11, ymax=11, zmin=10, zmax=10),
+                                              Cube(xmin=9, xmax=9, ymin=9, ymax=10, zmin=9, zmax=9),
+                                              Cube(xmin=11, xmax=11, ymin=11, ymax=11, zmin=9, zmax=9),
+                                              Cube(xmin=9, xmax=9, ymin=9, ymax=10, zmin=11, zmax=11),
+                                              Cube(xmin=10, xmax=10, ymin=9, ymax=9, zmin=11, zmax=11),
+                                              Cube(xmin=10, xmax=10, ymin=10, ymax=10, zmin=11, zmax=11),
+                                              Cube(xmin=11, xmax=11, ymin=11, ymax=11, zmin=11, zmax=11)}
+                                             )))
+
+    a = Cube(xmin=-46, xmax=-23, ymin=-6, ymax=46, zmin=-46, zmax=-1)
+    b = Cube(xmin=-48, xmax=-32, ymin=26, ymax=41, zmin=-47, zmax=-37)
+    all_points_in_a = set(a.all_points())
+    all_points_in_b = set(b.all_points())
+    delta = all_points_in_a.difference(all_points_in_b)
+    self.assertTrue(b.contains((-46, 30, -38)))
+    a_split = Space.split_by_cube({a}, b)
+    a_split_2 = Space.split_by_many_cubes({a}, {b})
+    self.assertEqual(a_split, a_split_2)
+    b_split = Space.split_by_cube({b}, a)
+    b_split_2 = Space.split_by_many_cubes({b}, a_split)
+    a_split_3 = Space.split_by_many_cubes(a_split_2, b_split_2)
+    b_split_3 = Space.split_by_many_cubes(b_split_2, a_split_3)
+    self.assertEqual(58512, Space.count(a_split))
+    self.assertEqual(2992, Space.count(b_split))
+    d = Space.subtract_cube_from_regions({a}, b)
+#    self.assertEqual(len(delta), Space.count(d))
+
     inp = read_input("sample_2")
     self.assertEqual(39, part_1(inp))
     inp = read_input("sample_1")
