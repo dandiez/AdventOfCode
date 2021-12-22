@@ -166,7 +166,9 @@ class Cube:
         """Given another cube, split this one and only keep the parts not in common with the other."""
         split_self = Space.split_by_cube({self}, other)
         remaining = {split for split in split_self if not split.contained_in_cube(other)}
-        return remaining
+        return Space.simplify(remaining)
+
+
 @dataclasses.dataclass
 class Operation:
     cube: Cube
@@ -189,7 +191,7 @@ class Space:
         if init:
             if not cube.contained_in_cube(InitCube):
                 return
-        print(operation, len(self.regions), sum(c.count() for c in self.regions))
+        print(operation) #, len(self.regions), sum(c.count() for c in self.regions))
         if operation.state is True:
             subcubes = Space.split_by_many_cubes({cube}, self.regions)
             skip = set()
@@ -203,12 +205,12 @@ class Space:
             # self.regions = Space.split_by_cube(self.regions, cube)
             self.regions = self.subtract_cube_from_regions(self.regions, cube)
 
-        print("Before: ", len(self.regions), sum(c.count() for c in self.regions))
+        print("Before: ", len(self.regions))#, sum(c.count() for c in self.regions))
         self.regions = Space.stubborn_simplify(self.regions)
-        print("After: ", len(self.regions), sum(c.count() for c in self.regions))
-        for c in self.regions:
-            assert c.is_valid()
-        self.assert_valid_region()
+        print("After: ", len(self.regions))#, sum(c.count() for c in self.regions))
+        # for c in self.regions:
+            # assert c.is_valid()
+        # self.assert_valid_region()
 
     @staticmethod
     def subtract_cube_from_regions(regions, cube):
@@ -338,7 +340,9 @@ def part_1(inp):
         operations.append(Operation(cube=Cube(*nums), state=state))
     print(operations)
     space = Space(regions=set())
-    for operation in operations:
+    num_operations = len(operations)
+    for n, operation in enumerate(operations):
+        print(f"{n} / {num_operations}")
         space.apply_operation(operation)
     return space.count_within(InitCube)
 
