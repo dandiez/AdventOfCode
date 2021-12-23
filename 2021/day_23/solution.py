@@ -14,8 +14,8 @@ class Game:
     """
 
     entrances = [2, 4, 6, 8]
-    corridor: list
     rooms: list[list]
+    corridor: list = dataclasses.field(default_factory=lambda: [None]*11)
     energy: int = 0
     parent_history: str = ""
 
@@ -243,13 +243,11 @@ def find_min_energy(game):
     return min_energy
 
 
-game_test_1 = Game(corridor=[None] * 11, rooms=[[1, 0], [2, 3], [1, 2], [3, 0]])
+game_test_1 = Game(rooms=[[1, 0], [2, 3], [1, 2], [3, 0]])
 
-game_1 = Game(corridor=[None] * 11, rooms=[[3, 2], [3, 2], [0, 1], [0, 1]])
+game_1 = Game(rooms=[[3, 2], [3, 2], [0, 1], [0, 1]])
 
-game_2 = Game(
-    corridor=[None] * 11, rooms=[[3, 3, 3, 2], [3, 2, 1, 2], [0, 1, 0, 1], [0, 0, 2, 1]]
-)
+game_2 = Game(rooms=[[3, 3, 3, 2], [3, 2, 1, 2], [0, 1, 0, 1], [0, 0, 2, 1]])
 
 
 def main(input_file):
