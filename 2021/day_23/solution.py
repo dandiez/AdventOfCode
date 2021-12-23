@@ -1,10 +1,18 @@
 import copy
 import dataclasses
+from typing import Optional
 from unittest import TestCase
 
 
 @dataclasses.dataclass
 class Game:
+    """Amphipod game.
+
+    'A' amphipods are stored as 0, B as 1, C as 2, D as 3.
+    The left most room has index 0, then left to right, 1, 2, 3.
+    Goal is to get the amphis 0 to room 0, the amphis 1 to room 1, etc.
+    """
+
     entrances = [2, 4, 6, 8]
     corridor: list
     rooms: list[list]
@@ -43,17 +51,25 @@ class Game:
             if not room:
                 continue
             if room[-1] == n:
+                # the amphi is in the right room
                 room.pop()
                 return True
         return False
 
-    def possible_moves(self):
+    def generate_moves(self):
+        """Generate new games based on making a single move from this game state.
+
+        There are two possible moves:
+        Amphi goes from room to corridor.
+        Amphi goes from corridor to *their* room.
+        """
         all_avail_to_move_out = self.all_next_available_to_move_out()
         all_that_can_enter_room = self.all_that_can_enter_room()
         yield from self.generate_games_amphi_moving_out(all_avail_to_move_out)
         yield from self.generate_games_amphi_enter_room(all_that_can_enter_room)
 
     def generate_games_amphi_enter_room(self, all_that_can_enter_room):
+        """Generate games based on an amphi entering their right room."""
         for pos, amphi in all_that_can_enter_room:
             new_game = copy.deepcopy(self)
             new_game.parent_history = self.history()
@@ -61,6 +77,7 @@ class Game:
             yield new_game
 
     def move_into_room(self, from_pos):
+        """Update the game state to move an amphi from the corridor to their room."""
         amphi = self.corridor[from_pos]
         self.corridor[from_pos] = None
         room = self.rooms[amphi]
@@ -71,6 +88,7 @@ class Game:
         self.energy += self.calc_energy(amphi, distance)
 
     def generate_games_amphi_moving_out(self, all_avail_to_move_out):
+        """Generate all possible games by moving amphis from a room to the corridor."""
         for next_available in all_avail_to_move_out:
             room_id, pos, amphi = next_available
             for potential_target in self.valid_pos():
@@ -81,6 +99,7 @@ class Game:
                     yield new_game
 
     def move_from_room(self, from_room_id, room_pos, target_pos):
+        """Update the game state to move an amphi from a room to the corridor."""
         amphi = self.rooms[from_room_id][room_pos]
         self.rooms[from_room_id][room_pos] = None
         distance_to_entrance = room_pos + 1
@@ -96,12 +115,13 @@ class Game:
         return (10 ** amphi) * distance
 
     def valid_pos(self):
-        """position not at entrance and not occupied"""
+        """position not at a room's entrance and not occupied."""
         for pos, occupant in enumerate(self.corridor):
             if pos not in self.entrances and occupant is None:
                 yield pos
 
     def all_next_available_to_move_out(self) -> list[tuple[int, int, int]]:
+        """Find all amphis that can move out of their current room to the corridor."""
         avail_in_rooms = []
         for room_id, room in enumerate(self.rooms):
             next_avail = self.next_available_to_move_out(room)
@@ -113,12 +133,14 @@ class Game:
         return avail_in_rooms
 
     def next_available_to_move_out(self, room):
+        """Find the amphi closest to the entrance."""
         for pos, a in enumerate(room):
             if a is not None:
                 return (pos, a)
         return None
 
     def all_that_can_enter_room(self):
+        """Find amphis that could move from the corridor to their room."""
         ready_rooms = self.ready_rooms()
         all_that_can_go_to_their_room = self.all_with_free_path_to_ready_room(
             ready_rooms
@@ -135,12 +157,18 @@ class Game:
 
     @staticmethod
     def is_ready(room):
+        """See if a room can accept amphis. It should be fully empty.
+
+        Note that a room that had the right amphi in it will be shrunk, i.e.,
+        there will never be amphis in their own room.
+        """
         for p in room:
             if p is not None:
                 return False
         return True
 
     def all_with_free_path_to_ready_room(self, ready_rooms):
+        """Get all amphis that can reach their room from the corridor."""
         amphis_that_can_reach_their_room = []
         for pos, amphi in enumerate(self.corridor):
             if amphi is None:
@@ -151,10 +179,12 @@ class Game:
         return amphis_that_can_reach_their_room
 
     def can_reach_entrance(self, from_pos, to_room_id):
+        """Return if the path from a corridor position to the entrance of a room is free."""
         entrance_pos = self.entrance_id(to_room_id)
         return self.path_is_clear(from_pos, entrance_pos)
 
     def path_is_clear(self, from_pos, to_pos):
+        """Figure out if we could freely move from a position in the corridor to another."""
         if from_pos == to_pos:
             return True
         if from_pos < to_pos:
@@ -169,14 +199,27 @@ class Game:
 
     @staticmethod
     def entrance_id(room_id):
+        """Given the room id, get the position in the corridor of its entrance."""
         return Game.entrances[room_id]
 
 
 def find_min_energy(game):
+    """Given a game position, find the smallest amount of energy to win.
+
+    ever_seen_states: record of all states (positions of amphis in rooms and corridors)
+        that has already happened in the past (the game is either a live game
+        or has already been played further).
+        The values store the energy that was consumed at that position. This way,
+        if we ever see the same game state for a higher energy cost we can discard it.
+
+    live_games: record of all games that are being played (not lost and not won) indexed by
+        the positions in corridor and rooms. If at some point we come across a more energy
+        efficient game for the same postion, we will replace the current live game with it.
+    """
     ever_seen_states = {}
     live_games = {game.state(): game}
     min_energy = 9e999
-    best_game = None
+    best_game: Optional[Game] = None
     while live_games:
         h, g = live_games.popitem()
         done, energy = g.eval()
@@ -184,18 +227,17 @@ def find_min_energy(game):
             min_energy = min(min_energy, energy)
             best_game = g
             continue
-        possible_games = list(g.possible_moves())
-        for game in possible_games:
+        for game in g.generate_moves():
             if game.energy >= min_energy:
                 # discard game. It will never beat the current solution.
                 continue
-            state, energy = game.state(), game.energy
+            state = game.state()
             if state in ever_seen_states:
-                if ever_seen_states[state] <= energy:
+                if ever_seen_states[state] <= game.energy:
                     # same position with more energy. Discard it.
                     continue
             live_games[state] = game
-            ever_seen_states[state] = energy
+            ever_seen_states[state] = game.energy
 
     print(best_game)
     return min_energy
