@@ -170,14 +170,12 @@ class Game:
 
     def all_with_free_path_to_ready_room(self, ready_rooms):
         """Get all amphis that can reach their room from the corridor."""
-        amphis_that_can_reach_their_room = []
         for pos, amphi in enumerate(self.corridor):
             if amphi is None:
                 continue
             if amphi in ready_rooms:  # there is a ready room for this amphi
                 if self.can_reach_entrance(pos, amphi):
-                    amphis_that_can_reach_their_room.append((pos, amphi))
-        return amphis_that_can_reach_their_room
+                    yield pos, amphi
 
     def can_reach_entrance(self, from_pos, to_room_id):
         """Return if the path from a corridor position to the entrance of a room is free."""
