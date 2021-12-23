@@ -15,7 +15,7 @@ class Game:
 
     entrances = [2, 4, 6, 8]
     rooms: list[list]
-    corridor: list = dataclasses.field(default_factory=lambda: [None]*11)
+    corridor: list = dataclasses.field(default_factory=lambda: [None] * 11)
     energy: int = 0
     parent_history: str = ""
 
