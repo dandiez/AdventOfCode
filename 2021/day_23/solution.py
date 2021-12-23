@@ -47,6 +47,7 @@ class Game:
             # print("Amphi in its place")
 
     def shorten_one_room(self):
+        """Amphis that enter the room always go to the end. Once there, the room can shrink."""
         for n, room in enumerate(self.rooms):
             if not room:
                 continue
