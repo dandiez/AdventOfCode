@@ -14,8 +14,10 @@ class Game:
     """
 
     entrances = [2, 4, 6, 8]
-    rooms: list[list]
-    corridor: list = dataclasses.field(default_factory=lambda: [None] * 11)
+    rooms: list[list[Optional[int]]]
+    corridor: list[Optional[int]] = dataclasses.field(
+        default_factory=lambda: [None] * 11
+    )
     energy: int = 0
     parent_history: str = ""
 
@@ -77,9 +79,11 @@ class Game:
             new_game.move_into_room(pos)
             yield new_game
 
-    def move_into_room(self, from_pos):
+    def move_into_room(self, from_pos: int):
         """Update the game state to move an amphi from the corridor to their room."""
         amphi = self.corridor[from_pos]
+        if amphi is None:
+            raise RuntimeError(f"Expected an amphi at position {from_pos}")
         self.corridor[from_pos] = None
         room = self.rooms[amphi]
         room[-1] = amphi
