@@ -3,13 +3,6 @@ import dataclasses
 from unittest import TestCase
 
 
-def read_input(filename="input"):
-    with open(filename) as f:
-        lines = [line.strip() for line in f.readlines() if line.strip()]
-    inp = [int(val) for val in lines]  # parse here...
-    return inp
-
-
 @dataclasses.dataclass
 class Game:
     entrances = [2, 4, 6, 8]
@@ -19,9 +12,10 @@ class Game:
     parent_history: str = ""
 
     def state(self):
+        """State that represents a position uniquely with tuples for hashing purposes."""
         corridor = tuple(self.corridor)
         rooms = tuple(tuple(r) for r in self.rooms)
-        return (corridor, rooms), self.energy
+        return corridor, rooms
 
     def history(self):
         history = str(self.corridor)
@@ -180,30 +174,29 @@ class Game:
 
 def find_min_energy(game):
     ever_seen_states = {}
-    live_games = {game.state()[0]: game}
+    live_games = {game.state(): game}
     min_energy = 9e999
     best_game = None
     while live_games:
         h, g = live_games.popitem()
         done, energy = g.eval()
-        if not done:
-            possible_games = list(g.possible_moves())
-            for game in possible_games:
-                if game.energy >= min_energy:
-                    # discard game
-                    continue
-                positions, energy = game.state()
-                if positions in ever_seen_states:
-                    if ever_seen_states[positions] > energy:
-                        # same position with less energy, noice!
-                        live_games[positions] = game
-                        ever_seen_states[positions] = energy
-                else:
-                    live_games[positions] = game
-                    ever_seen_states[positions] = energy
-        else:
+        if done:
             min_energy = min(min_energy, energy)
             best_game = g
+            continue
+        possible_games = list(g.possible_moves())
+        for game in possible_games:
+            if game.energy >= min_energy:
+                # discard game. It will never beat the current solution.
+                continue
+            state, energy = game.state(), game.energy
+            if state in ever_seen_states:
+                if ever_seen_states[state] <= energy:
+                    # same position with more energy. Discard it.
+                    continue
+            live_games[state] = game
+            ever_seen_states[state] = energy
+
     print(best_game)
     return min_energy
 
