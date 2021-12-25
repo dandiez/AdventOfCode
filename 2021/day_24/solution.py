@@ -1,7 +1,7 @@
 import dataclasses
 import itertools
 import queue
-from collections import deque
+from collections import deque, defaultdict
 from functools import lru_cache
 from unittest import TestCase
 
@@ -112,11 +112,19 @@ def part_1(inp):
     cached_functions = [f for f in functions]
     print(functions)
     min_z = 9e99
-    for monad in itertools.product(range(9, 0, -1), repeat=14):
+
+    # explore_each_function(functions)
+
+    work_backwards(functions)
+    return
+    m = (1, 1, 1, 1, 1)
+    for _monad in itertools.product(range(9, 0, -1), repeat=9):
+        monad = m + _monad
         w, x, y, z = (0, 0, 0, 0)
         for i, f in zip(monad, cached_functions):
-            w, x, y, z = f(w, x, y, z, i)
-            w, x, y = 0, 0, 0  # x, y are multiplied by zero, w is always input
+            w, x, y, z = f(
+                0, 0, 0, z, i
+            )  # x, y are multiplied by zero, w is always input
         if z == 0:
             print(monad)
             return monad
@@ -124,6 +132,82 @@ def part_1(inp):
             if z < min_z:
                 min_z = z
                 print(z, monad)
+
+
+def work_backwards(functions):
+    # explore each function to see what returns a zero
+    # f[13] to return zero: z=3, i=1, .. z=11, i=9
+    #
+    required_z = defaultdict(set)
+    required_z[0].add(0)
+    associated_i = defaultdict(list)
+    func = reversed(functions)
+    for n, f in enumerate(func):
+        for z in range(26**(min(1+n, 5))):
+            for i in range(1, 10):
+                _, _, _, z1 = f(0, 0, 0, z, i)
+                if z1 in required_z[n]:
+                    required_z[n + 1].add(z)
+                    associated_i[n].append((z, i))
+        # print(f"For function {n} we need the following:{required_z[n+1]} with {associated_i[n]}")
+    max_i = dict()
+    for k, v in associated_i.items():
+        if not v:
+            print(f"no solutions for {k}")
+        max_i[k] = max(i for z, i in v)
+    print(max_i)
+
+
+def explore_each_function(functions):
+    # explore each function for patterns
+    for n, f in enumerate(functions):
+        for z in range(1000):
+            for i in range(1, 10):
+                _, _, _, z1 = f(0, 0, 0, z, i)
+                if n == 0:
+                    assert z1 == 2 + i + 26 * z
+                elif n == 1:
+                    assert z1 == 4 + i + 26 * z
+                elif n == 2:
+                    assert z1 == 8 + i + 26 * z
+                elif n == 3:
+                    assert z1 == 7 + i + 26 * z
+                elif n == 4:
+                    assert z1 == 12 + i + 26 * z
+                elif n == 5:
+                    assert z1 == (z // 26) * (25 * int((z % 26) - 14 != i) + 1) + (
+                        i + 7
+                    ) * int((z % 26) - 14 != i)
+                elif n == 6:
+                    assert z1 == (z // 26) * (25 * int((z % 26) != i) + 1) + (
+                        i + 10
+                    ) * int((z % 26) != i)
+                elif n == 7:
+                    assert z1 == 14 + i + 26 * z
+                elif n == 8:
+                    assert z1 == (z // 26) * (25 * int((z % 26) - 10 != i) + 1) + (
+                        i + 2
+                    ) * int((z % 26) - 10 != i)
+                elif n == 9:
+                    assert z1 == 6 + i + 26 * z
+                elif n == 10:
+                    assert z1 == (z // 26) * (25 * int((z % 26) - 12 != i) + 1) + (
+                        i + 8
+                    ) * int((z % 26) - 12 != i)
+                elif n == 11:
+                    assert z1 == (z // 26) * (25 * int((z % 26) - 3 != i) + 1) + (
+                        i + 11
+                    ) * int((z % 26) - 3 != i)
+                elif n == 12:
+                    assert z1 == (z // 26) * (25 * int((z % 26) - 11 != i) + 1) + (
+                        i + 5
+                    ) * int((z % 26) - 11 != i)
+                elif n == 13:
+                    assert z1 == (z // 26) * (25 * int((z % 26) - 2 != i) + 1) + (
+                        i + 11
+                    ) * int((z % 26) - 2 != i)
+                else:
+                    print(n, z, i, f(0, 0, 0, z, i))
 
 
 def part_1_brute(inp):
