@@ -99,6 +99,8 @@ class ALU:
 
 
 def get_func(alu_func):
+    # A  list comprehension messes up the variables and results in bad lambdas
+    # need to have an aux function instead.
     f = lambda w, x, y, z, val: alu_func(w, x, y, z, val)
     return lru_cache(f)
 
@@ -144,6 +146,8 @@ def get_direct_functions():
 
 
 def validate_functions(alu_fs, fs):
+    """Validate the simplified functions."""
+    # The only value carried across is z (the others are reset by multiplication with zero.
     assert len(alu_fs) == len(fs)
     for af, f in zip(alu_fs, fs):
         for i in range(1, 10):
@@ -154,14 +158,22 @@ def validate_functions(alu_fs, fs):
 
 
 def solve_part(inp, is_part_1=True):
+    """Solve the puzzle."""
+    # Upon inspection, we see that the input is really 14 copies of nearly the same program
     subp = split_into_subprograms(inp)
     assert len(subp) == 14
     alus = [ALU(program=p) for p in subp]
 
+    # we can cache the function values (still no use in a brute force approach)
     alu_functions = [get_func(alu.as_function) for alu in alus]
-    functions = get_direct_functions()
-    # validate_functions(alu_functions, functions)
 
+    # we can reverse engineer the program to get equivalent functions which we can verify.
+    functions = get_direct_functions()
+    validate_functions(alu_functions, functions)
+
+    # Each of the 14 functions either increases (*26) the result or decreases it.
+    # However, the ones that are supposed to decrease the result may also increase it.
+    # Monitor these functions and discard values that don't decrease when they should.
     must_decrease = [
         False,
         False,
@@ -179,8 +191,12 @@ def solve_part(inp, is_part_1=True):
         True,
     ]
     assert len(must_decrease) == 14
+
+    # working from the end, find what intermediate z results would lead to a valid monad
     leading_to_zero_at_the_end = work_backwards(functions)
     monads = {(-1,): 0}
+
+    # working from the start, feed the initial z=0 for different i values
     for n, func in enumerate(functions):
         print(f"Running function {n}. Num monads is {len(monads)}.")
         expected_decrease = must_decrease[n]
@@ -225,6 +241,7 @@ def work_backwards(functions):
     for _n, f in enumerate(func):
         n = 13 - _n
         if n == 8:
+            # going backwards more takes forever... break here and we'll meet in the middle
             return required_z
         print(f"working backwards, checking function {n}")
         print(
@@ -240,19 +257,10 @@ def work_backwards(functions):
         print(
             f"previous function should produce one of {len(required_z[n])} valid outcomes."
         )
-        # associated_i[13-n].append((z, i))
-        # print(f"For function {n} we need the following:{required_z[n+1]} with {associated_i[n]}")
-
-    max_i = dict()
-    for k, v in associated_i.items():
-        if not v:
-            print(f"no solutions for {k}")
-        max_i[k] = max(i for z, i in v)
-    print(max_i)
 
 
 def explore_each_function(functions):
-    # explore each function for patterns
+    # confirm what each monad digit does
     for n, f in enumerate(functions):
         for z in range(1000):
             for i in range(1, 10):
@@ -321,10 +329,6 @@ def part_1_brute(inp):
             if c.z < min_z:
                 min_z = c.z
                 print(c.z, monad)
-
-
-def part_2(inp):
-    pass
 
 
 def main(input_file):
@@ -399,13 +403,8 @@ mod w 2"""
     self.assertEqual((1, 1, 1, 1), (c.w, c.x, c.y, c.z))
 
 
-def test_sample_2(self):
-    pass
-
-
 if __name__ == "__main__":
     print("*** solving tests ***")
     test_sample_1(TestCase())
-    test_sample_2(TestCase())
     print("*** solving main ***")
     main("input")
