@@ -194,9 +194,9 @@ def solve_part(inp, is_part_1=True):
 
     # working from the end, find what intermediate z results would lead to a valid monad
     leading_to_zero_at_the_end = work_backwards(functions)
-    monads = {(-1,): 0}
 
     # working from the start, feed the initial z=0 for different i values
+    monads = {(-1,): 0}
     for n, func in enumerate(functions):
         print(f"Running function {n}. Num monads is {len(monads)}.")
         expected_decrease = must_decrease[n]
