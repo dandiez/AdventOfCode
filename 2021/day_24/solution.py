@@ -103,35 +103,84 @@ def get_func(alu_func):
     return lru_cache(f)
 
 
+def get_direct_functions():
+    functions = []
+    functions.append(lambda z,i: 2 + i + 26 * z)
+    functions.append(lambda z,i: 4 + i + 26 * z)
+    functions.append(lambda z,i: 8 + i + 26 * z)
+    functions.append(lambda z,i:  7 + i + 26 * z)
+    functions.append(lambda z,i:  12 + i + 26 * z)
+    functions.append(lambda z,i:  (z // 26) * (25 * int((z % 26) - 14 != i) + 1) + (
+                i + 7
+        ) * int((z % 26) - 14 != i))
+    functions.append(lambda z, i: (z // 26) * (25 * int((z % 26) != i) + 1) + (
+                i + 10
+        ) * int((z % 26) != i))
+    functions.append(lambda z, i: 14 + i + 26 * z)
+    functions.append(lambda z,i:  (z // 26) * (25 * int((z % 26) - 10 != i) + 1) + (
+                i + 2
+        ) * int((z % 26) - 10 != i))
+    functions.append(lambda z, i: 6 + i + 26 * z)
+    functions.append(lambda z,i:  (z // 26) * (25 * int((z % 26) - 12 != i) + 1) + (
+                i + 8
+        ) * int((z % 26) - 12 != i))
+    functions.append(lambda z, i: (z // 26) * (25 * int((z % 26) - 3 != i) + 1) + (
+                i + 11
+        ) * int((z % 26) - 3 != i))
+    functions.append(lambda z, i: (z // 26) * (25 * int((z % 26) - 11 != i) + 1) + (
+                i + 5
+        ) * int((z % 26) - 11 != i))
+    functions.append(lambda z, i: (z // 26) * (25 * int((z % 26) - 2 != i) + 1) + (
+                i + 11
+        ) * int((z % 26) - 2 != i))
+    return functions
+
+def validate_functions(alu_fs, fs):
+    assert len(alu_fs)==len(fs)
+    for af, f in zip(alu_fs, fs):
+        for i in range(1, 10):
+            for z in range(1,1000):
+                _,_,_, z_af = af(0,0,0,z,i)
+                z_f = f(z, i)
+                assert z_af == z_f
+
 def part_1(inp):
     subp = split_into_subprograms(inp)
     assert len(subp) == 14
     alus = [ALU(program=p) for p in subp]
 
-    functions = [get_func(alu.as_function) for alu in alus]
-    cached_functions = [f for f in functions]
-    print(functions)
-    min_z = 9e99
+    alu_functions = [get_func(alu.as_function) for alu in alus]
+    functions = get_direct_functions()
+    # validate_functions(alu_functions, functions)
 
-    # explore_each_function(functions)
+    must_decrease = [False, False, False, False, False, True, True, False, True, False, True, True, True, True]
+    assert len(must_decrease)==14
+    # work_backwards(functions)
+    monads = {(-1,): 0}
+    for n, func in enumerate(functions):
+        print(f"Running function {n}. Num monads is {len(monads)}.")
+        expected_decrease = must_decrease[n]
+        new_monads = {}
+        reverse_lookup = {}
+        for i in range(9, 0, -1):
+            print(f"Running i={i}")
+            for old_monad, z in monads.items():
+                monad = old_monad + (i,)
+                z1 = func(z, i)
+                if expected_decrease:
+                    if z1 > z*26:
+                        # not enough divide by 26 operations afterwards
+                        continue
+                if z1 in reverse_lookup:
+                    old_monad = reverse_lookup[z1]
+                    if monad<old_monad:
+                        # do not store z1 for this monad if another better monad has the same z
+                        continue
+                new_monads[monad] = z1
+                reverse_lookup[z1] = monad
+        monads=new_monads
+    return reverse_lookup[0]
 
-    work_backwards(functions)
-    return
-    m = (1, 1, 1, 1, 1)
-    for _monad in itertools.product(range(9, 0, -1), repeat=9):
-        monad = m + _monad
-        w, x, y, z = (0, 0, 0, 0)
-        for i, f in zip(monad, cached_functions):
-            w, x, y, z = f(
-                0, 0, 0, z, i
-            )  # x, y are multiplied by zero, w is always input
-        if z == 0:
-            print(monad)
-            return monad
-        else:
-            if z < min_z:
-                min_z = z
-                print(z, monad)
 
 
 def work_backwards(functions):
