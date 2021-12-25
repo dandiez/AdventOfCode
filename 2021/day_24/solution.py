@@ -105,46 +105,55 @@ def get_func(alu_func):
 
 def get_direct_functions():
     functions = []
-    functions.append(lambda z,i: 2 + i + 26 * z)
-    functions.append(lambda z,i: 4 + i + 26 * z)
-    functions.append(lambda z,i: 8 + i + 26 * z)
-    functions.append(lambda z,i:  7 + i + 26 * z)
-    functions.append(lambda z,i:  12 + i + 26 * z)
-    functions.append(lambda z,i:  (z // 26) * (25 * int((z % 26) - 14 != i) + 1) + (
-                i + 7
-        ) * int((z % 26) - 14 != i))
-    functions.append(lambda z, i: (z // 26) * (25 * int((z % 26) != i) + 1) + (
-                i + 10
-        ) * int((z % 26) != i))
+    functions.append(lambda z, i: 2 + i + 26 * z)
+    functions.append(lambda z, i: 4 + i + 26 * z)
+    functions.append(lambda z, i: 8 + i + 26 * z)
+    functions.append(lambda z, i: 7 + i + 26 * z)
+    functions.append(lambda z, i: 12 + i + 26 * z)
+    functions.append(
+        lambda z, i: (z // 26) * (25 * int((z % 26) - 14 != i) + 1)
+        + (i + 7) * int((z % 26) - 14 != i)
+    )
+    functions.append(
+        lambda z, i: (z // 26) * (25 * int((z % 26) != i) + 1)
+        + (i + 10) * int((z % 26) != i)
+    )
     functions.append(lambda z, i: 14 + i + 26 * z)
-    functions.append(lambda z,i:  (z // 26) * (25 * int((z % 26) - 10 != i) + 1) + (
-                i + 2
-        ) * int((z % 26) - 10 != i))
+    functions.append(
+        lambda z, i: (z // 26) * (25 * int((z % 26) - 10 != i) + 1)
+        + (i + 2) * int((z % 26) - 10 != i)
+    )
     functions.append(lambda z, i: 6 + i + 26 * z)
-    functions.append(lambda z,i:  (z // 26) * (25 * int((z % 26) - 12 != i) + 1) + (
-                i + 8
-        ) * int((z % 26) - 12 != i))
-    functions.append(lambda z, i: (z // 26) * (25 * int((z % 26) - 3 != i) + 1) + (
-                i + 11
-        ) * int((z % 26) - 3 != i))
-    functions.append(lambda z, i: (z // 26) * (25 * int((z % 26) - 11 != i) + 1) + (
-                i + 5
-        ) * int((z % 26) - 11 != i))
-    functions.append(lambda z, i: (z // 26) * (25 * int((z % 26) - 2 != i) + 1) + (
-                i + 11
-        ) * int((z % 26) - 2 != i))
+    functions.append(
+        lambda z, i: (z // 26) * (25 * int((z % 26) - 12 != i) + 1)
+        + (i + 8) * int((z % 26) - 12 != i)
+    )
+    functions.append(
+        lambda z, i: (z // 26) * (25 * int((z % 26) - 3 != i) + 1)
+        + (i + 11) * int((z % 26) - 3 != i)
+    )
+    functions.append(
+        lambda z, i: (z // 26) * (25 * int((z % 26) - 11 != i) + 1)
+        + (i + 5) * int((z % 26) - 11 != i)
+    )
+    functions.append(
+        lambda z, i: (z // 26) * (25 * int((z % 26) - 2 != i) + 1)
+        + (i + 11) * int((z % 26) - 2 != i)
+    )
     return functions
 
+
 def validate_functions(alu_fs, fs):
-    assert len(alu_fs)==len(fs)
+    assert len(alu_fs) == len(fs)
     for af, f in zip(alu_fs, fs):
         for i in range(1, 10):
-            for z in range(1,1000):
-                _,_,_, z_af = af(0,0,0,z,i)
+            for z in range(1, 1000):
+                _, _, _, z_af = af(0, 0, 0, z, i)
                 z_f = f(z, i)
                 assert z_af == z_f
 
-def part_1(inp):
+
+def solve_part(inp, is_part_1=True):
     subp = split_into_subprograms(inp)
     assert len(subp) == 14
     alus = [ALU(program=p) for p in subp]
@@ -153,9 +162,24 @@ def part_1(inp):
     functions = get_direct_functions()
     # validate_functions(alu_functions, functions)
 
-    must_decrease = [False, False, False, False, False, True, True, False, True, False, True, True, True, True]
-    assert len(must_decrease)==14
-    # work_backwards(functions)
+    must_decrease = [
+        False,
+        False,
+        False,
+        False,
+        False,
+        True,
+        True,
+        False,
+        True,
+        False,
+        True,
+        True,
+        True,
+        True,
+    ]
+    assert len(must_decrease) == 14
+    leading_to_zero_at_the_end = work_backwards(functions)
     monads = {(-1,): 0}
     for n, func in enumerate(functions):
         print(f"Running function {n}. Num monads is {len(monads)}.")
@@ -168,19 +192,26 @@ def part_1(inp):
                 monad = old_monad + (i,)
                 z1 = func(z, i)
                 if expected_decrease:
-                    if z1 > z*26:
+                    if z1 > z * 26:
                         # not enough divide by 26 operations afterwards
+                        continue
+                if n + 1 in leading_to_zero_at_the_end:
+                    if not z1 in leading_to_zero_at_the_end[n + 1]:
+                        # this solution will not lead to a final zero
                         continue
                 if z1 in reverse_lookup:
                     old_monad = reverse_lookup[z1]
-                    if monad<old_monad:
-                        # do not store z1 for this monad if another better monad has the same z
-                        continue
+                    if is_part_1:
+                        if monad < old_monad:
+                            # do not store z1 for this monad if another better monad has the same z
+                            continue
+                    else:
+                        if monad > old_monad:
+                            continue
                 new_monads[monad] = z1
                 reverse_lookup[z1] = monad
-        monads=new_monads
-    return reverse_lookup[0]
-
+        monads = new_monads
+    return "".join(str(v) for v in reverse_lookup[0][1:])
 
 
 def work_backwards(functions):
@@ -188,17 +219,30 @@ def work_backwards(functions):
     # f[13] to return zero: z=3, i=1, .. z=11, i=9
     #
     required_z = defaultdict(set)
-    required_z[0].add(0)
+    required_z[14].add(0)
     associated_i = defaultdict(list)
     func = reversed(functions)
-    for n, f in enumerate(func):
-        for z in range(26**(min(1+n, 5))):
-            for i in range(1, 10):
-                _, _, _, z1 = f(0, 0, 0, z, i)
-                if z1 in required_z[n]:
-                    required_z[n + 1].add(z)
-                    associated_i[n].append((z, i))
+    for _n, f in enumerate(func):
+        n = 13 - _n
+        if n == 8:
+            return required_z
+        print(f"working backwards, checking function {n}")
+        print(
+            f"this function must produce any of the {len(required_z[n+1])} valid outcomes."
+        )
+        for i in range(1, 10):
+            max_z = 26 ** (1 + _n)
+            print(f"Checking i={i} up to z={max_z}")
+            for z in range(max_z):
+                z1 = f(z, i)
+                if z1 in required_z[n + 1]:
+                    required_z[n].add(z)
+        print(
+            f"previous function should produce one of {len(required_z[n])} valid outcomes."
+        )
+        # associated_i[13-n].append((z, i))
         # print(f"For function {n} we need the following:{required_z[n+1]} with {associated_i[n]}")
+
     max_i = dict()
     for k, v in associated_i.items():
         if not v:
@@ -287,13 +331,13 @@ def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
     # part 1
     inp = read_input(input_file)
-    p1 = part_1(inp)
+    p1 = solve_part(inp)
 
     print(f"Solution to part 1: {p1}")
 
     # part 2
     inp = read_input(input_file)
-    p2 = part_2(inp)
+    p2 = solve_part(inp, is_part_1=False)
     print(f"Solution to part 2: {p2}")
     return p1, p2
 
