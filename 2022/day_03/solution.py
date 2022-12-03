@@ -1,3 +1,4 @@
+from typing import Iterable
 from unittest import TestCase
 
 
@@ -7,15 +8,29 @@ def read_input(filename="input"):
     return lines
 
 
-def split_in_half(backpack: str) -> tuple[str, str]:
+def part_1(inp):
+    backpacks = [split_in_half(backpack) for backpack in inp]
+    all_commmon = [find_common_letter(backpack) for backpack in backpacks]
+    return sum(get_priority(letter) for letter in all_commmon)
+
+
+def split_in_half(backpack: str) -> list[str, str]:
     half = len(backpack) // 2
-    return backpack[:half], backpack[half:]
+    return [backpack[:half], backpack[half:]]
 
 
-def find_common(pocket_1: str, pocket_2: str) -> str:
-    for letter in pocket_1:
-        if letter in pocket_2:
+def find_common_letter(multiple_strings: list[str]) -> str:
+    for letter in multiple_strings[0]:
+        if letter_is_in_all_strings(letter, multiple_strings[1:]):
             return letter
+    raise ValueError("Cannot find letter in common.")
+
+
+def letter_is_in_all_strings(letter: str, strings: list[str]) -> bool:
+    for string in strings:
+        if letter not in string:
+            return False
+    return True
 
 
 def get_priority(letter: str) -> int:
@@ -24,34 +39,19 @@ def get_priority(letter: str) -> int:
     return ord(letter) - ord("A") + 27
 
 
-def part_1(inp):
-    pockets = [split_in_half(backpack) for backpack in inp]
-    all_commmon = [find_common(*pockets) for pockets in pockets]
-    return sum(get_priority(letter) for letter in all_commmon)
-
-
-def get_p2_common(backpacks):
-    a, b, c = backpacks
-    for letter in a:
-        if letter in b:
-            if letter in c:
-                return letter
-
-
 def part_2(inp):
-    gs = []
-    n = 0
-    g = []
-    for backpack in inp:
-        if n == 3:
-            n = 0
-            gs.append(g)
-            g = []
-        g.append(backpack)
-        n += 1
-    gs.append(g)
-    all_commmon = [get_p2_common(pockets) for pockets in gs]
+    groups = list(in_threes(inp))
+    all_commmon = [find_common_letter(group) for group in groups]
     return sum(get_priority(letter) for letter in all_commmon)
+
+
+def in_threes(backpacks: list[str]) -> Iterable[list[str]]:
+    grouped = []
+    for backpack in backpacks:
+        grouped.append(backpack)
+        if len(grouped) == 3:
+            yield grouped
+            grouped = []
 
 
 def main(input_file):
