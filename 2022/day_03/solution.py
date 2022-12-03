@@ -30,8 +30,28 @@ def part_1(inp):
     return sum(get_priority(letter) for letter in all_commmon)
 
 
+def get_p2_common(backpacks):
+    a, b, c = backpacks
+    for letter in a:
+        if letter in b:
+            if letter in c:
+                return letter
+
+
 def part_2(inp):
-    pass
+    gs = []
+    n = 0
+    g = []
+    for backpack in inp:
+        if n == 3:
+            n = 0
+            gs.append(g)
+            g = []
+        g.append(backpack)
+        n += 1
+    gs.append(g)
+    all_commmon = [get_p2_common(pockets) for pockets in gs]
+    return sum(get_priority(letter) for letter in all_commmon)
 
 
 def main(input_file):
@@ -54,6 +74,8 @@ def test_sample_1(self):
 
 
 def test_sample_2(self):
+    inp = read_input("sample_1")
+    self.assertEqual(part_2(inp), 70)
     pass
 
 
