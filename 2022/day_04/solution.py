@@ -1,4 +1,5 @@
 import dataclasses
+from typing import Union
 from unittest import TestCase
 
 
@@ -7,11 +8,14 @@ class Range:
     min: int
     max: int
 
-    def __contains__(self, other: 'Range'):
-        return (other.min >= self.min) & (other.max <= self.max)
+    def __contains__(self, other: Union['Range', int]):
+        if isinstance(other, int):
+            return (other >= self.min) & (other <= self.max)
+        else:
+            return other.min in self and other.max in self
 
-    def overlap(self, other):
-        return Range(other.min, other.min) in self or Range(other.max, other.max) in self
+    def overlaps_with(self, other: 'Range'):
+        return self.min in other or self.max in other or other in self
 
     @classmethod
     def from_string(cls, string: str):
@@ -22,7 +26,7 @@ class Range:
 def read_input(filename="input"):
     with open(filename) as f:
         lines = [line.strip() for line in f.readlines() if line.strip()]
-    inp = [parse_line(line) for line in lines]  # parse here...
+    inp = [parse_line(line) for line in lines]
     return inp
 
 
@@ -36,7 +40,7 @@ def part_1(inp):
 
 
 def part_2(inp):
-    return sum((a.overlap(b)) or (b.overlap(a)) for a, b in inp)
+    return sum(a.overlaps_with(b) for a, b in inp)
 
 
 def main(input_file):
@@ -59,7 +63,8 @@ def test_sample_1(self):
 
 
 def test_sample_2(self):
-    pass
+    inp = read_input("sample_1")
+    self.assertEqual(4, part_2(inp))
 
 
 if __name__ == "__main__":
