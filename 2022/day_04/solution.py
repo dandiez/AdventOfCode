@@ -8,13 +8,13 @@ class Range:
     min: int
     max: int
 
-    def __contains__(self, other: Union['Range', int]):
+    def __contains__(self, other: Union["Range", int]):
         if isinstance(other, int):
             return (other >= self.min) & (other <= self.max)
         else:
             return other.min in self and other.max in self
 
-    def overlaps_with(self, other: 'Range'):
+    def overlaps_with(self, other: "Range"):
         return self.min in other or self.max in other or other in self
 
     @classmethod
@@ -68,8 +68,8 @@ def test_sample_2(self):
 
 
 if __name__ == "__main__":
-    print('*** solving tests ***')
+    print("*** solving tests ***")
     test_sample_1(TestCase())
     test_sample_2(TestCase())
-    print('*** solving main ***')
+    print("*** solving main ***")
     main("input")

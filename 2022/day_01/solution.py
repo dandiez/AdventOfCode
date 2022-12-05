@@ -44,8 +44,8 @@ def test_sample_2(self):
 
 
 if __name__ == "__main__":
-    print('*** solving tests ***')
+    print("*** solving tests ***")
     test_sample_1(TestCase())
     test_sample_2(TestCase())
-    print('*** solving main ***')
+    print("*** solving main ***")
     main("input")

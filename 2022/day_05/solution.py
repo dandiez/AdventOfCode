@@ -17,7 +17,9 @@ class Stacks(dict[int, deque]):
         for line in raw.split("\n"):
             if not line:
                 break
-            for id, pos in zip(range(1, cls.NUM_STACKS + 1), range(1, 4 * (NUM_STACKS + 1), 4)):
+            for id, pos in zip(
+                range(1, cls.NUM_STACKS + 1), range(1, 4 * (NUM_STACKS + 1), 4)
+            ):
                 try:
                     value = line[pos].strip()
                 except IndexError:
@@ -39,11 +41,7 @@ class Instruction:
     @classmethod
     def from_string(cls, string):
         chunked = string.split()
-        return Instruction(
-            int(chunked[1]),
-            int(chunked[3]),
-            int(chunked[5])
-        )
+        return Instruction(int(chunked[1]), int(chunked[3]), int(chunked[5]))
 
 
 def read_input(filename="input"):
@@ -51,7 +49,11 @@ def read_input(filename="input"):
         raw = f.read()
     boxes, movements = raw.split("\n\n")[:2]
     stacks = Stacks.from_raw(boxes)
-    instructions = [Instruction.from_string(string.strip()) for string in movements.splitlines() if string.strip()]
+    instructions = [
+        Instruction.from_string(string.strip())
+        for string in movements.splitlines()
+        if string.strip()
+    ]
     return stacks, instructions
 
 
@@ -103,8 +105,8 @@ def test_sample_2(self):
 
 
 if __name__ == "__main__":
-    print('*** solving tests ***')
+    print("*** solving tests ***")
     test_sample_1(TestCase())
     test_sample_2(TestCase())
-    print('*** solving main ***')
+    print("*** solving main ***")
     main("input")

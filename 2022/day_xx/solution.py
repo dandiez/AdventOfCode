@@ -7,12 +7,15 @@ def read_input(filename="input"):
     inp = [int(val) for val in lines]  # parse here...
     return inp
 
+
 def part_1(inp):
     print(inp)
     pass
 
+
 def part_2(inp):
     pass
+
 
 def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
@@ -27,16 +30,19 @@ def main(input_file):
     print(f"Solution to part 2: {p2}")
     return p1, p2
 
+
 def test_sample_1(self):
     # inp = read_input("sample_1")
     pass
 
+
 def test_sample_2(self):
     pass
 
+
 if __name__ == "__main__":
-    print('*** solving tests ***')
+    print("*** solving tests ***")
     test_sample_1(TestCase())
     test_sample_2(TestCase())
-    print('*** solving main ***')
+    print("*** solving main ***")
     main("input")
