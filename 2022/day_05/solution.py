@@ -2,8 +2,6 @@ import dataclasses
 from collections import deque
 from unittest import TestCase
 
-NUM_STACKS = 9
-
 
 @dataclasses.dataclass
 class Stacks(dict[int, deque]):
@@ -18,7 +16,7 @@ class Stacks(dict[int, deque]):
             if not line:
                 break
             for id, pos in zip(
-                range(1, cls.NUM_STACKS + 1), range(1, 4 * (NUM_STACKS + 1), 4)
+                range(1, cls.NUM_STACKS + 1), range(1, 4 * (cls.NUM_STACKS + 1), 4)
             ):
                 try:
                     value = line[pos].strip()
