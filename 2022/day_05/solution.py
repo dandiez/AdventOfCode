@@ -8,23 +8,26 @@ class Stacks(dict[int, deque]):
     NUM_STACKS = 9
 
     @classmethod
-    def from_raw(cls, raw):
+    def from_raw(cls, raw: str):
         stacks = cls()
         for k in range(1, 1 + cls.NUM_STACKS):
             stacks[k] = deque()
         for line in raw.split("\n"):
             if not line:
                 break
-            for id, pos in zip(
-                range(1, cls.NUM_STACKS + 1), range(1, 4 * (cls.NUM_STACKS + 1), 4)
-            ):
-                try:
-                    value = line[pos].strip()
-                except IndexError:
-                    break
-                if value and not isinstance(value, int):
-                    stacks[id].appendleft(value)
+            cls._parse_line(line, stacks)
         return stacks
+
+    @classmethod
+    def _parse_line(cls, line: str, stacks: "Stacks"):
+        for id in range(1, cls.NUM_STACKS + 1):
+            pos = id * 4 - 3
+            try:
+                value = line[pos].strip()
+            except IndexError:
+                break
+            if value and not isinstance(value, int):
+                stacks[id].appendleft(value)
 
     def get_answer(self):
         return "".join([v[-1] for v in self.values() if v])
