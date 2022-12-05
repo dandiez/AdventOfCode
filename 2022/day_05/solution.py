@@ -65,7 +65,16 @@ def part_1(inp: tuple[Stacks, list[Instruction]]):
 
 
 def part_2(inp):
-    pass
+    stacks, instructions = inp
+    for instruction in instructions:
+        temp = []
+        for q in range(instruction.quantity):
+            box = stacks[instruction.from_id].pop()
+            temp.append(box)
+        temp.reverse()
+        for box in temp:
+            stacks[instruction.to_id].append(box)
+    return stacks.get_answer()
 
 
 def main(input_file):
@@ -88,6 +97,8 @@ def test_sample_1(self):
 
 
 def test_sample_2(self):
+    inp = read_input("sample_1")
+    self.assertEqual("MCD", part_2(inp))
     pass
 
 
