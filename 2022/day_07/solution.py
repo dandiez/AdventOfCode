@@ -8,6 +8,7 @@ full_path = str
 @dataclasses.dataclass
 class FileSystemObject:
     name: str
+    parent: 'FileSystemObject'
 
     @property
     def full_path(self):
@@ -63,7 +64,8 @@ class FileSystem:
         elif rel_dir.strip() == "..":
             self.current_dir = self.current_dir.parent
         else:
-            print(f"cannot find relative path {rel_dir}")
+            # print(f"cannot find relative path {rel_dir}")
+            return
 
     def mkdir(self, dir_name: str):
         new = Dir(name=dir_name, parent=self.current_dir, dirs={}, files=[])
@@ -83,26 +85,13 @@ def read_input(filename="input"):
 
 
 def part_1(inp):
-    fsys = FileSystem.init_with_root()
-    for command in inp:
-        if command.startswith("$ cd"):
-            dir = command[5:].strip()
-            fsys.cd(dir)
-        elif command.startswith("$ ls"):
-            continue
-        elif command.startswith("dir "):
-            dir_name = command[4:].strip()
-            fsys.mkdir(dir_name)
-        else:
-            size, fname = command.split(" ")
-            fsys.mkfile(fname, int(size))
-
+    fsys = get_file_system_state(inp)
     return sum(d.size for d in fsys.dirs.values() if d.size <= 100000)
 
 
-def part_2(inp):
+def get_file_system_state(commands: list[str]):
     fsys = FileSystem.init_with_root()
-    for command in inp:
+    for command in commands:
         if command.startswith("$ cd"):
             dir = command[5:].strip()
             fsys.cd(dir)
@@ -114,7 +103,11 @@ def part_2(inp):
         else:
             size, fname = command.split(" ")
             fsys.mkfile(fname, int(size))
+    return fsys
 
+
+def part_2(inp):
+    fsys = get_file_system_state(inp)
     root_size = fsys.dirs["/"].size
     total_space = 70000000
     free_space_needed = 30000000
@@ -146,7 +139,8 @@ def test_sample_1(self):
 
 
 def test_sample_2(self):
-    pass
+    inp = read_input("sample_1")
+    self.assertEqual(24933642, part_2(inp))
 
 
 if __name__ == "__main__":
