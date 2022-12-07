@@ -101,7 +101,29 @@ def part_1(inp):
 
 
 def part_2(inp):
-    pass
+    fsys = FileSystem.init_with_root()
+    for command in inp:
+        if command.startswith("$ cd"):
+            dir = command[5:].strip()
+            fsys.cd(dir)
+        elif command.startswith("$ ls"):
+            continue
+        elif command.startswith("dir "):
+            dir_name = command[4:].strip()
+            fsys.mkdir(dir_name)
+        else:
+            size, fname = command.split(" ")
+            fsys.mkfile(fname, int(size))
+
+    root_size = fsys.dirs["/"].size
+    total_space = 70000000
+    free_space_needed = 30000000
+    available_space = total_space - root_size
+    all_sizes = [d.size for d in fsys.dirs.values()]
+    all_sizes.sort()
+    for s in all_sizes:
+        if available_space + s >= free_space_needed:
+            return s
 
 
 def main(input_file):
