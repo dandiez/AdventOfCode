@@ -15,26 +15,25 @@ def part_1(inp):
     for y in range(v):
         tallest = -1
         for x in range(h):
-            if forest[(x, y)] > tallest:
-                tallest = forest[(x, y)]
-                visible.add((x, y))
+            tallest = check_visibility(forest, tallest, visible, x, y)
         tallest = -1
         for x in reversed(range(h)):
-            if forest[(x, y)] > tallest:
-                tallest = forest[(x, y)]
-                visible.add((x, y))
+            tallest = check_visibility(forest, tallest, visible, x, y)
     for x in range(h):
         tallest = -1
         for y in range(v):
-            if forest[(x, y)] > tallest:
-                tallest = forest[(x, y)]
-                visible.add((x, y))
+            tallest = check_visibility(forest, tallest, visible, x, y)
         tallest = -1
         for y in reversed(range(v)):
-            if forest[(x, y)] > tallest:
-                tallest = forest[(x, y)]
-                visible.add((x, y))
+            tallest = check_visibility(forest, tallest, visible, x, y)
     return len(visible)
+
+
+def check_visibility(forest, tallest, visible, x, y):
+    if forest[(x, y)] > tallest:
+        tallest = forest[(x, y)]
+        visible.add((x, y))
+    return tallest
 
 
 def part_2(inp):
@@ -44,55 +43,35 @@ def part_2(inp):
     max_score = 0
     for x in range(h):
         for y in range(v):
-            score = get_score(forest, h, v, (x, y))
+            score = get_score(forest, (x, y))
             if score > max_score:
-                print(f"{(x, y)}")
                 max_score = score
     return max_score
 
 
-def get_score(forest, h, v, pos):
-    x0, y0 = pos
-    if (x0 == 0) or x0 == h - 1 or y0 == 0 or y0 == v - 1:
-        return 0
+def get_score(forest, pos):
     score = 1
-
-    count = 0
-    y = y0
-    for x in range(x0 - 1, -1, -1):
-        count += 1
-        hight = forest[x, y]
-        if hight >= forest[pos]:
-            break
-    score *= count
-
-    count = 0
-    y = y0
-    for x in range(x0 + 1, h):
-        count += 1
-        hight = forest[x, y]
-        if hight >= forest[pos]:
-            break
-    score *= count
-
-    count = 0
-    x = x0
-    for y in range(y0 - 1, -1, -1):
-        count += 1
-        hight = forest[x, y]
-        if hight >= forest[pos]:
-            break
-    score *= count
-
-    count = 0
-    x = x0
-    for y in range(y0 + 1, v):
-        count += 1
-        hight = forest[x, y]
-        if hight >= forest[pos]:
-            break
-    score *= count
+    for direction in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+        count = get_viewing_distance(forest, pos, direction)
+        score *= count
     return score
+
+
+def vsum(tup1: tuple, tup2: tuple):
+    return tuple(v1 + v2 for v1, v2 in zip(tup1, tup2))
+
+
+def get_viewing_distance(forest, pos0: tuple, direction: tuple):
+    n = 0
+    p = vsum(pos0, direction)
+    hmax = forest[pos0]
+    while p in forest:
+        h = forest[p]
+        p = vsum(p, direction)
+        n += 1
+        if h >= hmax:
+            break
+    return n
 
 
 def main(input_file):
@@ -119,8 +98,8 @@ def test_sample_2(self):
     forest = {(x, y): int(inp[y][x]) for x in range(len(inp[0])) for y in range(len(inp))}
     h = len(inp[0])
     v = len(inp)
-    self.assertEqual(8, get_score(forest, h, v, (2, 3)))
-    self.assertEqual(4, get_score(forest, h, v, (2, 1)))
+    self.assertEqual(8, get_score(forest, (2, 3)))
+    self.assertEqual(4, get_score(forest, (2, 1)))
     self.assertEqual(8, part_2(inp))
 
 
