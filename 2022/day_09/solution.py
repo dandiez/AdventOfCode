@@ -83,11 +83,11 @@ def part_2(inp):
     chain = Chain([HT(
         H=np.array([0, 0]),
         T=np.array([0, 0]), t_visited={(0, 0)}
-    ) for _ in range(10)])
+    ) for _ in range(9)])
     for dir, count in inp:
         for _ in range(count):
             chain.move(dir)
-    return len(chain.links[-2].t_visited)
+    return len(chain.links[-1].t_visited)
 
 
 def main(input_file):
