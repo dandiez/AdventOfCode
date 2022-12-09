@@ -33,10 +33,13 @@ def main(input_file):
 
 def test_sample_1(self):
     # inp = read_input("sample_1")
+    # self.assertEqual(1, part_1(inp))
     pass
 
 
 def test_sample_2(self):
+    # inp = read_input("sample_1")
+    # self.assertEqual(1, part_1(inp))
     pass
 
 
