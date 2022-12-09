@@ -4,14 +4,25 @@ from unittest import TestCase
 import numpy as np
 
 
-def mod(a: np.ndarray):
+def magnitude(a: np.ndarray):
+    """Get vector magnitude."""
     return np.linalg.norm(a)
 
 
-DIRS = {"U": np.array([0, 1]),
-        "D": np.array([0, -1]),
-        "L": np.array([-1, 0]),
-        "R": np.array([1, 0])}
+def unitv(v: np.ndarray):
+    """Get the unit vector (as int)."""
+    m = magnitude(v)
+    if m == 0:
+        return v
+    return (v // m).astype(int)
+
+
+DIRS = {
+    "U": np.array([0, 1]),
+    "D": np.array([0, -1]),
+    "L": np.array([-1, 0]),
+    "R": np.array([1, 0]),
+}
 
 
 def read_input(filename="input"):
@@ -23,56 +34,41 @@ def read_input(filename="input"):
 
 
 @dataclasses.dataclass
-class HT:
+class Link:
     H: np.ndarray
     T: np.ndarray
     t_visited: set[tuple[int, int]]
 
-    def move(self, dir: np.ndarray):
-        if tuple(dir) == (0, 0):
+    def move(self, direction: np.ndarray):
+        if tuple(direction) == (0, 0):
             return
-        self.H = self.H + dir
+        self.H = self.H + direction
         self.catch_up()
         self.t_visited.add(tuple(self.T))
 
     def catch_up(self):
         delta = self.H - self.T
-        if tuple(delta) == (0, 0):
-            return
         dx = delta * np.array([1, 0])
         dy = delta * np.array([0, 1])
-        if mod(dx) == 2 and mod(dy) == 0:
-            self.T += dx // 2
-        elif mod(dy) == 2 and mod(dx) == 0:
-            self.T += dy // 2
-        elif mod(dx) == 2 and mod(dy) == 1:
-            self.T += dx // 2 + dy
-        elif mod(dy) == 2 and mod(dx) == 1:
-            self.T += dy // 2 + dx
-        elif mod(dy) == 2 and mod(dx) == 2:
-            self.T += dy // 2 + dx // 2
-        elif mod(dx) == 1 or mod(dy) == 1:
-            return
-        else:
-            raise ValueError(delta)
+        maxmov = max(magnitude(dx), magnitude(dy))
+        if maxmov == 2:
+            self.T += unitv(dx) + unitv(dy)
+        return
 
 
 @dataclasses.dataclass
 class Chain:
-    links: list[HT]
+    links: list[Link]
 
-    def move(self, dir: np.ndarray):
-        self.links[0].move(dir)
+    def move(self, direction: np.ndarray):
+        self.links[0].move(direction)
         for n in range(1, len(self.links)):
             new_dir = self.links[n - 1].T - self.links[n].H
             self.links[n].move(new_dir)
 
 
 def part_1(inp):
-    ht = HT(
-        H=np.array([0, 0]),
-        T=np.array([0, 0]), t_visited=set()
-    )
+    ht = Link(H=np.array([0, 0]), T=np.array([0, 0]), t_visited=set())
     for dir, count in inp:
         for _ in range(count):
             ht.move(dir)
@@ -80,10 +76,12 @@ def part_1(inp):
 
 
 def part_2(inp):
-    chain = Chain([HT(
-        H=np.array([0, 0]),
-        T=np.array([0, 0]), t_visited={(0, 0)}
-    ) for _ in range(9)])
+    chain = Chain(
+        [
+            Link(H=np.array([0, 0]), T=np.array([0, 0]), t_visited={(0, 0)})
+            for _ in range(9)
+        ]
+    )
     for dir, count in inp:
         for _ in range(count):
             chain.move(dir)
