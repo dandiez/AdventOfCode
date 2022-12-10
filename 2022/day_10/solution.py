@@ -7,6 +7,7 @@ def read_input(filename="input"):
     lines = [line.split(" ") for line in lines]  # parse here...
     return lines
 
+
 def get_x(inp):
     x = 1
     yield x
@@ -19,20 +20,35 @@ def get_x(inp):
             yield x
     yield x
 
+
 def part_1(inp):
     signal_strength = 0
-    key_cycles = [n+19 for n in range(300) if not n % 40]
+    key_cycles = [n + 19 for n in range(300) if not n % 40]
     for n, x in enumerate(get_x(inp)):
         if n in key_cycles:
-            N=n+1
-            sigstr = x*N
-            print(f"N: {N}, x: {x}, sigstr: {sigstr}")
+            N = n + 1
+            sigstr = x * N
             signal_strength += sigstr
     return signal_strength
 
 
 def part_2(inp):
-    pass
+    screen = [[None for n in range(40)] for k in range(6)]
+    current_line = 0
+    current_column = 0
+    for n, x in enumerate(get_x(inp)):
+        if n == 240:
+            break
+        if current_column == 40:
+            current_line += 1
+            current_column = 0
+        if current_column in [x - 1, x, x + 1]:
+            screen[current_line][current_column] = "#"
+        else:
+            screen[current_line][current_column] = "."
+        current_column += 1
+    for line in screen:
+        print("".join(line))
 
 
 def main(input_file):
@@ -52,18 +68,11 @@ def main(input_file):
 def test_sample_1(self):
     inp = read_input("sample_1")
     self.assertEqual(13140, part_1(inp))
-    pass
-
-
-def test_sample_2(self):
-    # inp = read_input("sample_1")
-    # self.assertEqual(1, part_1(inp))
-    pass
+    part_2(inp)
 
 
 if __name__ == "__main__":
     print("*** solving tests ***")
     test_sample_1(TestCase())
-    test_sample_2(TestCase())
     print("*** solving main ***")
     main("input")
