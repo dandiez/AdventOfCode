@@ -43,9 +43,9 @@ def part_2(inp):
             current_line += 1
             current_column = 0
         if current_column in [x - 1, x, x + 1]:
-            screen[current_line][current_column] = "#"
+            screen[current_line][current_column] = "█"
         else:
-            screen[current_line][current_column] = "."
+            screen[current_line][current_column] = " "
         current_column += 1
     for line in screen:
         print("".join(line))
