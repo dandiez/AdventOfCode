@@ -10,43 +10,39 @@ def read_input(filename="input"):
 
 def get_x(inp):
     x = 1
-    yield x
     for line in inp:
         if line[0] == "noop":
             yield x
         elif line[0] == "addx":
             yield x
-            x += int(line[1])
             yield x
-    yield x
+            x += int(line[1])
 
 
 def part_1(inp):
     signal_strength = 0
-    key_cycles = [n + 19 for n in range(300) if not n % 40]
+    key_cycles = [i + 20 for i in range(300) if not i % 40]
     for n, x in enumerate(get_x(inp)):
-        if n in key_cycles:
-            N = n + 1
-            sigstr = x * N
+        cycle = n + 1
+        if cycle in key_cycles:
+            sigstr = x * cycle
             signal_strength += sigstr
     return signal_strength
 
 
 def part_2(inp):
-    screen = [[None for n in range(40)] for k in range(6)]
+    screen: list[list] = [[None for i in range(40)] for j in range(6)]
     current_line = 0
     current_column = 0
     for n, x in enumerate(get_x(inp)):
-        if n == 240:
-            break
-        if current_column == 40:
-            current_line += 1
-            current_column = 0
         if current_column in [x - 1, x, x + 1]:
             screen[current_line][current_column] = "█"
         else:
             screen[current_line][current_column] = " "
         current_column += 1
+        if current_column == 40:
+            current_line += 1
+            current_column = 0
     for line in screen:
         print("".join(line))
 
