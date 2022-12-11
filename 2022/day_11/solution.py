@@ -1,17 +1,13 @@
 import dataclasses
 from unittest import TestCase
 
-from typing_extensions import Literal
-
 
 def read_input(filename="input"):
     with open(filename) as f:
         lines = f.read()
-    raw_monkeys =[s.strip() for s in lines.split("\n\n") if s.strip()]
+    raw_monkeys = [s.strip() for s in lines.split("\n\n") if s.strip()]
     monkeys = [Monkey.from_raw_string(s) for s in raw_monkeys]
     return monkeys
-
-
 
 
 @dataclasses.dataclass
@@ -31,17 +27,17 @@ class Monkey:
         test_mod = int(lines[3][21:].strip())
         true_monkey = int(lines[4][28:].strip())
         false_monkey = int(lines[5][29:].strip())
-        return cls(items, operation, test_mod,true_monkey,false_monkey)
+        return cls(items, operation, test_mod, true_monkey, false_monkey)
 
     def take_turn(self, worry_div):
         for item in self.items:
             old = item
             new = eval(self.operation)
-            if worry_div == 3:
+            if worry_div == 3:  # part 1
                 new = new // 3
             else:
-                new = new % worry_div
-            if new % self.test_mod ==0:
+                new = new % worry_div  # part 2
+            if new % self.test_mod == 0:
                 yield new, self.true_monkey
             else:
                 yield new, self.false_monkey
@@ -58,19 +54,19 @@ class MonkeyPack:
         for monkey in self.pack:
             new_items = monkey.take_turn(self.worry_div)
             for item, target in list(new_items):
-                print(f"Thrown {item} to {target}")
+                # print(f"Thrown {item} to {target}")
                 self.pack[target].items.append(item)
-
 
 
 def part_1(inp):
     mp = MonkeyPack(inp, 3)
     for n in range(20):
         mp.play_round()
-        print(mp)
+        # print(mp)
     num_times = [m.num_inspected for m in mp.pack]
     num_times = sorted(num_times, reverse=True)
-    return num_times[0]*num_times[1]
+    return num_times[0] * num_times[1]
+
 
 def part_2(inp):
     mp = MonkeyPack(inp, 1)
@@ -80,7 +76,7 @@ def part_2(inp):
     mp.worry_div = w
     for n in range(10000):
         mp.play_round()
-        print(mp)
+        # print(mp)
     num_times = [m.num_inspected for m in mp.pack]
     num_times = sorted(num_times, reverse=True)
     return num_times[0] * num_times[1]
