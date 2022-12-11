@@ -1,6 +1,6 @@
 import dataclasses
 import math
-from typing import Iterable
+from typing import Iterable, Callable
 from unittest import TestCase
 
 MonkeyID = int
@@ -14,10 +14,20 @@ def read_input(filename="input"):
     return monkeys
 
 
+def get_operation_function(s: str) -> Callable[[int], int]:
+    if s == "old * old":
+        return lambda x: x * x
+    elif "*" in s:
+        return lambda x: x * int(s.split("*")[1])
+    elif "+" in s:
+        return lambda x: x + int(s.split("+")[1])
+    raise ValueError("Cannot parse operation")
+
+
 @dataclasses.dataclass
 class Monkey:
     items: list
-    operation: str
+    operation: Callable[[int], int]
     test_mod: int
     true_monkey: int
     false_monkey: int
@@ -27,7 +37,7 @@ class Monkey:
     def from_raw_string(cls, s: str):
         lines = s.splitlines()
         items = [int(n.strip()) for n in lines[1][18:].split(",")]
-        operation = lines[2][18:].strip()
+        operation = get_operation_function(lines[2][18:].strip())
         test_mod = int(lines[3][21:].strip())
         true_monkey = int(lines[4][28:].strip())
         false_monkey = int(lines[5][29:].strip())
@@ -37,7 +47,7 @@ class Monkey:
         """Yield the item passed and the target monkey."""
         for item in self.items:
             old = item
-            new = eval(self.operation)
+            new = self.operation(old)
             if worry_div == 3:
                 new = new // 3  # part 1
             else:
