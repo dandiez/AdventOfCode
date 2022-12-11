@@ -1,5 +1,9 @@
 import dataclasses
+import math
+from typing import Iterable
 from unittest import TestCase
+
+MonkeyID = int
 
 
 def read_input(filename="input"):
@@ -29,12 +33,13 @@ class Monkey:
         false_monkey = int(lines[5][29:].strip())
         return cls(items, operation, test_mod, true_monkey, false_monkey)
 
-    def take_turn(self, worry_div):
+    def take_turn(self, worry_div) -> Iterable[tuple[int, MonkeyID]]:
+        """Yield the item passed and the target monkey."""
         for item in self.items:
             old = item
             new = eval(self.operation)
-            if worry_div == 3:  # part 1
-                new = new // 3
+            if worry_div == 3:
+                new = new // 3  # part 1
             else:
                 new = new % worry_div  # part 2
             if new % self.test_mod == 0:
@@ -54,32 +59,27 @@ class MonkeyPack:
         for monkey in self.pack:
             new_items = monkey.take_turn(self.worry_div)
             for item, target in list(new_items):
-                # print(f"Thrown {item} to {target}")
                 self.pack[target].items.append(item)
+
+    def get_monkey_business_level(self):
+        num_times = [m.num_inspected for m in self.pack]
+        num_times.sort(reverse=True)
+        return num_times[0] * num_times[1]
 
 
 def part_1(inp):
     mp = MonkeyPack(inp, 3)
     for n in range(20):
         mp.play_round()
-        # print(mp)
-    num_times = [m.num_inspected for m in mp.pack]
-    num_times = sorted(num_times, reverse=True)
-    return num_times[0] * num_times[1]
+    return mp.get_monkey_business_level()
 
 
 def part_2(inp):
     mp = MonkeyPack(inp, 1)
-    w = 1
-    for m in mp.pack:
-        w *= m.test_mod
-    mp.worry_div = w
+    mp.worry_div = math.prod(m.test_mod for m in mp.pack)
     for n in range(10000):
         mp.play_round()
-        # print(mp)
-    num_times = [m.num_inspected for m in mp.pack]
-    num_times = sorted(num_times, reverse=True)
-    return num_times[0] * num_times[1]
+    return mp.get_monkey_business_level()
 
 
 def main(input_file):
@@ -99,13 +99,11 @@ def main(input_file):
 def test_sample_1(self):
     inp = read_input("sample_1")
     self.assertEqual(10605, part_1(inp))
-    pass
 
 
 def test_sample_2(self):
     inp = read_input("sample_1")
     self.assertEqual(2713310158, part_2(inp))
-    pass
 
 
 if __name__ == "__main__":
