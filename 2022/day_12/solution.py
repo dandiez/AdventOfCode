@@ -16,7 +16,7 @@ class Cell:
     is_start: bool = False
     is_end: bool = False
     visited: bool = False
-    distance_to_start: int = None
+    distance_to_start: int = 9e99
 
 
 def get_height(c: str):
@@ -48,13 +48,12 @@ class Hill:
                     is_end = True
                 else:
                     height = get_height(c)
-                cells[(x, y)] = Cell(coords=(x, y), height=height, is_start=is_start,
-                                     is_end=is_end)
+                cells[(x, y)] = Cell(
+                    coords=(x, y), height=height, is_start=is_start, is_end=is_end
+                )
         return cls(cells)
 
-    def find_top(self):
-        self.start_cell.distance_to_start = 0
-        next_to_visit = {self.start_cell.coords}
+    def find_top(self, next_to_visit):
         while self.end_cell.visited is not True:
             candidates = set(c for c in self.find_candidates(next_to_visit))
             next_to_visit = candidates
@@ -68,7 +67,9 @@ class Hill:
         c.visited = True
         for neighbour in self.get_neighbours(c):
             if not neighbour.visited and (neighbour.height - c.height) <= 1:
-                neighbour.distance_to_start = c.distance_to_start + 1
+                neighbour.distance_to_start = min(
+                    c.distance_to_start + 1, neighbour.distance_to_start
+                )
                 yield neighbour.coords
 
     def get_neighbours(self, c: Cell) -> Iterable[Cell]:
@@ -80,12 +81,21 @@ class Hill:
 
 def part_1(inp):
     h = Hill.from_raw(inp)
-    h.find_top()
+    h.start_cell.distance_to_start = 0
+    next_to_visit = {h.start_cell.coords}
+    h.find_top(next_to_visit)
     return h.end_cell.distance_to_start
 
 
 def part_2(inp):
-    pass
+    h = Hill.from_raw(inp)
+    for c in h._cells.values():
+        if c.height == 0:
+            c.distance_to_start = 0
+            c.is_start = True
+    next_to_visit = {c.coords for c in h._cells.values() if c.is_start}
+    h.find_top(next_to_visit)
+    return h.end_cell.distance_to_start
 
 
 def main(input_file):
@@ -105,13 +115,11 @@ def main(input_file):
 def test_sample_1(self):
     inp = read_input("sample_1")
     self.assertEqual(31, part_1(inp))
-    pass
 
 
 def test_sample_2(self):
-    # inp = read_input("sample_1")
-    # self.assertEqual(1, part_1(inp))
-    pass
+    inp = read_input("sample_1")
+    self.assertEqual(29, part_2(inp))
 
 
 if __name__ == "__main__":
