@@ -53,7 +53,8 @@ class Hill:
                 )
         return cls(cells)
 
-    def find_top(self, next_to_visit):
+    def find_top(self):
+        next_to_visit = {c.coords for c in self._cells.values() if c.is_start}
         while self.end_cell.visited is not True:
             candidates = set(c for c in self.find_candidates(next_to_visit))
             next_to_visit = candidates
@@ -82,8 +83,7 @@ class Hill:
 def part_1(inp):
     h = Hill.from_raw(inp)
     h.start_cell.distance_to_start = 0
-    next_to_visit = {h.start_cell.coords}
-    h.find_top(next_to_visit)
+    h.find_top()
     return h.end_cell.distance_to_start
 
 
@@ -93,8 +93,7 @@ def part_2(inp):
         if c.height == 0:
             c.distance_to_start = 0
             c.is_start = True
-    next_to_visit = {c.coords for c in h._cells.values() if c.is_start}
-    h.find_top(next_to_visit)
+    h.find_top()
     return h.end_cell.distance_to_start
 
 
