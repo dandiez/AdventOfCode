@@ -1,12 +1,16 @@
 import copy
+import dataclasses
 from ast import literal_eval
 from enum import Enum
+from typing import Any
 from unittest import TestCase
+
 
 class State(Enum):
     in_right_order = 1
     not_in_right_order = 2
     not_known = 3
+
 
 def read_input(filename="input"):
     with open(filename) as f:
@@ -14,20 +18,22 @@ def read_input(filename="input"):
     inp = [(literal_eval(p[0]), literal_eval(p[1])) for p in pairs]  # parse here...
     return inp
 
+
 def is_mixed_types(left, right):
-     return _is_left_int_right_list(left, right) or _is_left_int_right_list(right, left)
+    return _is_left_int_right_list(left, right) or _is_left_int_right_list(right, left)
 
 
 def _is_left_int_right_list(left, right):
     return isinstance(left, int) and isinstance(right, list)
+
 
 def _int_to_list(value):
     if isinstance(value, int):
         return [value]
     return value
 
-def is_in_right_order(left, right) -> State:
 
+def is_in_right_order(left, right) -> State:
     if is_mixed_types(left, right):
         left = _int_to_list(left)
         right = _int_to_list(right)
@@ -45,24 +51,43 @@ def is_in_right_order(left, right) -> State:
         r = right.pop(0)
         state = is_in_right_order(l, r)
     if state is not State.not_known:
-        print(state)
         return state
     if not left and not right:
-        print(state)
         return state
     if not left:
-        print(State.in_right_order)
         return State.in_right_order
     elif not right:
-        print(State.not_in_right_order)
         return State.not_in_right_order
 
+
 def part_1(inp):
-    pairs = {i: pair for i, pair in zip(range(1, len(inp)+1), inp)}
-    return sum(i for i,p in pairs.items() if is_in_right_order(*p) is State.in_right_order)
+    pairs = {i: pair for i, pair in zip(range(1, len(inp) + 1), inp)}
+    return sum(i for i, p in pairs.items() if is_in_right_order(*p) is State.in_right_order)
+
 
 def part_2(inp):
-    pass
+    p1 = Packet([[6]])
+    p2 = Packet([[2]])
+    packets = []
+    for a, b in inp:
+        packets.append(a)
+        packets.append(b)
+    ps = [Packet(p) for p in packets]
+    ps.append(p1)
+    ps.append(p2)
+    ps.sort()
+    return (ps.index(p1) + 1) * (ps.index(p2) + 1)
+
+
+@dataclasses.dataclass
+class Packet:
+    p: Any
+
+    def __gt__(self, other):
+        if is_in_right_order(
+                copy.deepcopy(self.p), copy.deepcopy(other.p)) is State.in_right_order:
+            return False
+        return True
 
 
 def main(input_file):
@@ -86,8 +111,8 @@ def test_sample_1(self):
 
 
 def test_sample_2(self):
-    # inp = read_input("sample_1")
-    # self.assertEqual(1, part_1(inp))
+    inp = read_input("sample_1")
+    self.assertEqual(140, part_2(inp))
     pass
 
 
