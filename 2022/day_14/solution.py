@@ -18,6 +18,10 @@ class InfiniteSandException(Exception):
     """Sand goes into the void."""
 
 
+class SandSourceStuckException(Exception):
+    """Sand reached the source."""
+
+
 def read_input(filename="input"):
     with open(filename) as f:
         lines = [line.strip() for line in f.readlines() if line.strip()]
@@ -161,6 +165,53 @@ class SandSimulator:
         t.is_at_rest = True
 
 
+@dataclasses.dataclass
+class SandSimulator2:
+    cave: Cave
+    source: tuple
+    sand_landed: int = 0
+
+    def __post_init__(self):
+        """Add a source tile for display purposes and floor."""
+        source_tile = Tile(pos=self.source, material=Material.sand_source, is_at_rest=True)
+        self.cave.add_tile(source_tile)
+        rock_bottom = [[(self.cave.min_x - 800, self.cave.max_y + 2),
+                        (self.cave.min_x + 800, self.cave.max_y + 2),
+                        ]]
+        self.cave.load_rocks(rock_bottom)
+        self.cave._min_x = None
+        self.cave._max_x = None
+        self.cave._min_y = None
+        self.cave._max_y = None
+
+    def release_sand_block(self):
+        t = Tile(self.source, material=Material.sand, is_at_rest=False)
+        while not t.is_at_rest and not t.pos[1] > self.cave.max_y:
+            self.move_sand(t)
+        if not t.is_at_rest:
+            raise InfiniteSandException(f"Sand escaped in position {t.pos}")
+        self.cave.add_tile(t)
+        self.sand_landed += 1
+        if t.pos == self.source:
+            raise SandSourceStuckException()
+
+    def release_a_lot_of_sand(self):
+        while True:
+            try:
+                self.release_sand_block()
+            except (SandSourceStuckException, InfiniteSandException):
+                break
+
+    def move_sand(self, t: Tile):
+        p = t2a(t.pos)
+        for dir in SAND_FALL_DIRS:
+            destination = p + dir
+            if not self.cave.is_solid(a2t(destination)):
+                t.pos = a2t(destination)
+                return
+        t.is_at_rest = True
+
+
 def part_1(inp):
     c = Cave(dict())
     c.load_rocks(inp)
@@ -170,7 +221,11 @@ def part_1(inp):
 
 
 def part_2(inp):
-    pass
+    c = Cave(dict())
+    c.load_rocks(inp)
+    s = SandSimulator2(cave=c, source=(500, 0))
+    s.release_a_lot_of_sand()
+    return s.sand_landed
 
 
 def main(input_file):
@@ -193,8 +248,8 @@ def test_sample_1(self):
 
 
 def test_sample_2(self):
-    # inp = read_input("sample_1")
-    # self.assertEqual(1, part_1(inp))
+    inp = read_input("sample_1")
+    self.assertEqual(93, part_2(inp))
     pass
 
 
