@@ -14,12 +14,20 @@ def a2t(a: np.ndarray) -> tuple:
     return tuple(np.rint(a).astype(int))
 
 
-class InfiniteSandException(Exception):
+class SimulationMustStop(Exception):
+    """Raised if the simulation cannot continue."""
+
+
+class InfiniteSandException(SimulationMustStop):
     """Sand goes into the void."""
 
 
-class SandSourceStuckException(Exception):
+class SandSourceStuckException(SimulationMustStop):
     """Sand reached the source."""
+
+
+ROCK_BOTTOM_DELTA_Y = 2
+PADDING = ROCK_BOTTOM_DELTA_Y
 
 
 def read_input(filename="input"):
@@ -31,7 +39,9 @@ def read_input(filename="input"):
         a, b = raw_coord.split(",")
         return int(a), int(b)
 
-    rock_segments = [[raw_coord_to_tuple(raw_coord) for raw_coord in line] for line in lines]
+    rock_segments = [
+        [raw_coord_to_tuple(raw_coord) for raw_coord in line] for line in lines
+    ]
     return rock_segments
 
 
@@ -49,10 +59,12 @@ class Material(Enum):
         return self is self.sand or self is self.rock
 
 
-CHAR_MAP = {Material.air: " ",
-            Material.rock: "█",
-            Material.sand: "o",
-            Material.sand_source: "+"}
+CHAR_MAP = {
+    Material.air: " ",
+    Material.rock: "█",
+    Material.sand: "o",
+    Material.sand_source: "+",
+}
 
 SAND_FALL_DIRS = (np.array((0, 1)), np.array((-1, 1)), np.array((1, 1)))
 
@@ -74,7 +86,7 @@ class Cave:
 
     def __str__(self):
         chars = []
-        for y in range(self.min_y, self.max_y + 1):
+        for y in range(self.min_y, self.max_y + 1 + PADDING):
             for x in range(self.min_x, self.max_x + 1):
                 chars.append(self.mat_at_position((x, y)).char())
             chars.append("\n")
@@ -89,7 +101,9 @@ class Cave:
                 unit = diff / mag
                 for k in range(round(mag) + 1):
                     p = t2a(from_point) + k * unit
-                    self.add_tile(Tile(pos=a2t(p), material=Material.rock, is_at_rest=True))
+                    self.add_tile(
+                        Tile(pos=a2t(p), material=Material.rock, is_at_rest=True)
+                    )
 
     def add_tile(self, t: Tile):
         self.tiles[t.pos] = t
@@ -135,7 +149,9 @@ class SandSimulator:
 
     def __post_init__(self):
         """Add a source tile for display purposes."""
-        source_tile = Tile(pos=self.source, material=Material.sand_source, is_at_rest=True)
+        source_tile = Tile(
+            pos=self.source, material=Material.sand_source, is_at_rest=True
+        )
         self.cave.add_tile(source_tile)
 
     def release_sand_block(self):
@@ -151,42 +167,30 @@ class SandSimulator:
         while True:
             try:
                 self.release_sand_block()
-            except InfiniteSandException:
-                print(self.cave)
+            except SimulationMustStop:
                 break
 
     def move_sand(self, t: Tile):
-        p = t2a(t.pos)
-        for dir in SAND_FALL_DIRS:
-            destination = p + dir
-            if not self.cave.is_solid(a2t(destination)):
-                t.pos = a2t(destination)
+        for destination in self.get_destinations_just_below(t):
+            if not self.cave.is_solid(destination):
+                t.pos = destination
                 return
         t.is_at_rest = True
 
+    @staticmethod
+    def get_destinations_just_below(t: Tile):
+        p = t2a(t.pos)
+        for dir in SAND_FALL_DIRS:
+            destination = p + dir
+            yield a2t(destination)
+
 
 @dataclasses.dataclass
-class SandSimulator2:
-    cave: Cave
-    source: tuple
-    sand_landed: int = 0
-
-    def __post_init__(self):
-        """Add a source tile for display purposes and floor."""
-        source_tile = Tile(pos=self.source, material=Material.sand_source, is_at_rest=True)
-        self.cave.add_tile(source_tile)
-        rock_bottom = [[(self.cave.min_x - 800, self.cave.max_y + 2),
-                        (self.cave.min_x + 800, self.cave.max_y + 2),
-                        ]]
-        self.cave.load_rocks(rock_bottom)
-        self.cave._min_x = None
-        self.cave._max_x = None
-        self.cave._min_y = None
-        self.cave._max_y = None
-
+class SandSimulator2(SandSimulator):
     def release_sand_block(self):
         t = Tile(self.source, material=Material.sand, is_at_rest=False)
-        while not t.is_at_rest and not t.pos[1] > self.cave.max_y:
+        while not t.is_at_rest and not t.pos[1] > self.cave.max_y + ROCK_BOTTOM_DELTA_Y:
+            self.expand_rock_bottom(t)
             self.move_sand(t)
         if not t.is_at_rest:
             raise InfiniteSandException(f"Sand escaped in position {t.pos}")
@@ -195,21 +199,12 @@ class SandSimulator2:
         if t.pos == self.source:
             raise SandSourceStuckException()
 
-    def release_a_lot_of_sand(self):
-        while True:
-            try:
-                self.release_sand_block()
-            except (SandSourceStuckException, InfiniteSandException):
-                break
-
-    def move_sand(self, t: Tile):
-        p = t2a(t.pos)
-        for dir in SAND_FALL_DIRS:
-            destination = p + dir
-            if not self.cave.is_solid(a2t(destination)):
-                t.pos = a2t(destination)
-                return
-        t.is_at_rest = True
+    def expand_rock_bottom(self, t: Tile):
+        one_to_rock_bottom = self.cave.max_y + ROCK_BOTTOM_DELTA_Y - 1
+        if not t.pos[1] == one_to_rock_bottom:
+            return
+        for pos in self.get_destinations_just_below(t):
+            self.cave.add_tile(Tile(pos=pos, material=Material.rock, is_at_rest=True))
 
 
 def part_1(inp):
@@ -217,6 +212,7 @@ def part_1(inp):
     c.load_rocks(inp)
     s = SandSimulator(cave=c, source=(500, 0))
     s.release_a_lot_of_sand()
+    print(c)
     return s.sand_landed
 
 
@@ -225,6 +221,7 @@ def part_2(inp):
     c.load_rocks(inp)
     s = SandSimulator2(cave=c, source=(500, 0))
     s.release_a_lot_of_sand()
+    print(c)
     return s.sand_landed
 
 
