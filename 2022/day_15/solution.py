@@ -122,6 +122,8 @@ def get_no_beacon_locations_in_row(inp, y, subtract_beacon=False):
 
 
 def part_2(inp, largest_coord=4000000):
+    # TODO: find intersections of sensor zones and skip all 'y'
+    #   that are not immediately 1 more or less.
     for y in range(largest_coord):
         if y % 100000 == 0:
             print(y)
