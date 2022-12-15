@@ -61,13 +61,14 @@ class Row:
         return sum(s.length for s in self.segments)
 
     def contiguous(self):
+        self.simplify()
         l = list([(s.xmin, s.xmax) for s in self.segments])
         l.sort()
         for s1, s2 in zip(l, l[1:]):
-            if s1[1] != s2[0]:
+            if s1[1]+1 != s2[0]:
+                self.last_gap_found = s1[1] +1
                 return False
         return True
-
 
 @dataclasses.dataclass
 class Sensor:
@@ -107,44 +108,27 @@ def read_input(filename="input"):
 
 
 def part_1(inp, y=2000000):
-    not_there = Row(y=y, segments=set())
-    for sensor in inp:
-        for intersect_segment in sensor.intersect_at_y(y, subtract_beacon=True).segments:
-            not_there.segments.add(intersect_segment)
+    not_there = get_no_beacon_locations_in_row(inp, y, subtract_beacon=True)
     return not_there.cell_sum()
 
 
+def get_no_beacon_locations_in_row(inp, y, subtract_beacon=False):
+    not_there = Row(y=y, segments=set())
+    for sensor in inp:
+        for intersect_segment in sensor.intersect_at_y(y, subtract_beacon=subtract_beacon).segments:
+            not_there.segments.add(intersect_segment)
+    return not_there
+
+
 def part_2(inp, largest_coord=4000000):
-    limits = {(-1, 0), (largest_coord, largest_coord + 1)}
     for y in range(largest_coord):
         if y % 100000 == 0:
             print(y)
-        not_there = Row(y=y, segments=set())
-        for sensor in inp:
-            for intersect_segment in sensor.intersect_at_y(y).segments:
-                not_there.segments.add(intersect_segment)
-        for l in limits:
-            not_there.split(l)
-        exclude = set()
-        for s in not_there.segments:
-            if s.xmin < 0:
-                exclude.add(s)
-            if s.xmax > largest_coord:
-                exclude.add(s)
-        for s in exclude:
-            not_there.subtract(s)
+        not_there = get_no_beacon_locations_in_row(inp, y)
         if not_there.contiguous():
             continue
-        whole_row = Row(segments={Segment(0, largest_coord)}, y=y)
-        all_cp = not_there.get_all_end_point_cut_points()
-        for cp in all_cp:
-            not_there.split(cp)
-            whole_row.split(cp)
-        for s in not_there.segments:
-            whole_row.subtract(s)
-        if whole_row.segments:
-            s = whole_row.segments.pop()
-            return s.xmin * 4000000 + whole_row.y
+        if 0 <= not_there.last_gap_found <= largest_coord:
+            return not_there.last_gap_found* 4000000 + not_there.y
 
 
 def main(input_file):
@@ -169,7 +153,6 @@ def test_sample_1(self):
 def test_sample_2(self):
     inp = read_input("sample_1")
     self.assertEqual(56000011, part_2(inp, largest_coord=20))
-    pass
 
 
 if __name__ == "__main__":
