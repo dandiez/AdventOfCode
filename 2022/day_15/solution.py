@@ -85,17 +85,17 @@ class Sensor:
         numbs = [int(s) for s in re.findall("[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", s)]
         return cls(*numbs)
 
-    def intersect_at_y(self, y) -> Row:
+    def intersect_at_y(self, y, subtract_beacon=False) -> Row:
         if abs(y - self.y) > self.radius:
             return Row(y=y, segments=set())
         minx = self.x - (self.radius - abs(y - self.y))
         maxx = self.x + (self.radius - abs(y - self.y))
         segment = Segment(minx, maxx)
         r = Row(y=y, segments={segment})
-        # if self.beacon_y == y:
-        #    r.split((self.beacon_x-1, self.beacon_x))
-        #    r.split((self.beacon_x, self.beacon_x+1))
-        #    r.subtract(Segment(self.beacon_x, self.beacon_x))
+        if self.beacon_y == y and subtract_beacon:
+            r.split((self.beacon_x - 1, self.beacon_x))
+            r.split((self.beacon_x, self.beacon_x + 1))
+            r.subtract(Segment(self.beacon_x, self.beacon_x))
         return r
 
 
@@ -109,14 +109,14 @@ def read_input(filename="input"):
 def part_1(inp, y=2000000):
     not_there = Row(y=y, segments=set())
     for sensor in inp:
-        for intersect_segment in sensor.intersect_at_y(y).segments:
+        for intersect_segment in sensor.intersect_at_y(y, subtract_beacon=True).segments:
             not_there.segments.add(intersect_segment)
     return not_there.cell_sum()
 
 
 def part_2(inp, largest_coord=4000000):
     limits = {(-1, 0), (largest_coord, largest_coord + 1)}
-    for y in range(largest_coord // 2, largest_coord):
+    for y in range(largest_coord):
         if y % 100000 == 0:
             print(y)
         not_there = Row(y=y, segments=set())
@@ -150,9 +150,9 @@ def part_2(inp, largest_coord=4000000):
 def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
     # part 1
-    # inp = read_input(input_file)
-    # p1 = part_1(inp)
-    # print(f"Solution to part 1: {p1}")
+    inp = read_input(input_file)
+    p1 = part_1(inp)
+    print(f"Solution to part 1: {p1}")
 
     # part 2
     inp = read_input(input_file)
@@ -174,7 +174,7 @@ def test_sample_2(self):
 
 if __name__ == "__main__":
     print("*** solving tests ***")
-    # test_sample_1(TestCase())
+    test_sample_1(TestCase())
     test_sample_2(TestCase())
     print("*** solving main ***")
     main("input")
