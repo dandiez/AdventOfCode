@@ -50,7 +50,7 @@ class Map:
 
     @lru_cache(None)
     def valves_that_can_be_opened_on_time(self, state) -> Iterable[Location]:
-        time_available = state.minutes_left - TIME_TO_OPEN_ONE_VALVE
+        time_available = state.minutes_left - TIME_TO_OPEN_ONE_VALVE - 1  # -1 so it is useful at all
         closed_valves = [
             v
             for v, isopen in zip(map.locations, state.open_valves)
@@ -86,43 +86,23 @@ class Map:
 
 @lru_cache(None)
 def find_max_pressure(state: State) -> int:
-
     global map
-    total_flow_released = 0
-    if state.minutes_left == 0:
-        return total_flow_released
     current_flow_per_minute = map.flow_rate_at_visited(state.open_valves)
-    # There is till time, so we can...
-    # wait here for "minute_left" minutes...
-    max_flows = [current_flow_per_minute*state.minutes_left]
-
-    # if the current valve is closed we can open it...
-    if not map.is_open(state, state.location):
-        max_flows.append(
-            find_max_pressure(
-                State(
-                    location=state.location,
-                    minutes_left=state.minutes_left - TIME_TO_OPEN_ONE_VALVE,
-                    open_valves=map.open_valve_at_loc(
-                        state.open_valves, state.location
-                    ),
-                )
-            )
-            + current_flow_per_minute * TIME_TO_OPEN_ONE_VALVE
-        )
-    # and we can move to a location that still has a closed valve.
+    max_flows = []
     for new_loc in map.valves_that_can_be_opened_on_time(state):
-        time_to_reach = map.time_to_reach_valve(state.location, new_loc)
+        time_to_reach = map.time_to_reach_valve(state.location, new_loc) + TIME_TO_OPEN_ONE_VALVE
         max_flows.append(
             find_max_pressure(
                 State(
                     location=new_loc,
                     minutes_left=state.minutes_left - time_to_reach,
-                    open_valves=state.open_valves,
+                    open_valves=map.open_valve_at_loc(state.open_valves, new_loc)
                 )
             )
             + time_to_reach * current_flow_per_minute
         )
+    if not max_flows:
+        return current_flow_per_minute * state.minutes_left
     return max(max_flows)
 
 
