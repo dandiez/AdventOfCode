@@ -29,7 +29,7 @@ CHAR_MAP = {
     Material.rock: "█",
     Material.wall: "|",
     Material.floor: "-",
-    Material.corner: "+"
+    Material.corner: "+",
 }
 
 
@@ -40,10 +40,15 @@ class Cell:
 
 @dataclasses.dataclass
 class CellBunch:
+    """Bunch of cells behaving like a rigid body with an offset.
+
+    The public methods deal with absolute coordinates.
+    """
+
     _cells: dict[complex, Cell] = dataclasses.field(default_factory=dict)
     _offset: complex = 0
 
-    def to_str(self, add_origin: complex |None=0):
+    def to_str(self, add_origin: complex | None = 0):
         cop = copy.copy(self)
         if add_origin is not None:
             cop.add_more_cells(CellBunch({add_origin: Cell(Material.corner)}))
@@ -107,7 +112,7 @@ class CellBunch:
 
     def remove_pos(self, positions: set[complex]):
         for pos in positions:
-            del self._cells[pos-self._offset]
+            del self._cells[pos - self._offset]
 
 
 @dataclasses.dataclass
@@ -142,32 +147,37 @@ class RockTrix(CellBunch):
     _command_generator: Iterator[complex] = None
     _command_id = 0
     _seen_positions: dict = dataclasses.field(default_factory=dict)
-    _yoffset: int = 0
 
     def __post_init__(self):
-        floor = CellBunch(_cells={p: Cell(Material.floor) for p in range(self._right_wall_x - self._left_wall_x)})
+        floor = CellBunch(
+            _cells={
+                p: Cell(Material.floor)
+                for p in range(self._right_wall_x - self._left_wall_x)
+            }
+        )
         floor[self._left_wall_x] = Cell(Material.corner)
         floor[self._right_wall_x] = Cell(Material.corner)
         self.add_more_cells(floor)
-        self._rock_generator = (copy.deepcopy(r) for r in itertools.cycle(self._rock_sequence))
+        self._rock_generator = (
+            copy.deepcopy(r) for r in itertools.cycle(self._rock_sequence)
+        )
         self._command_generator = itertools.cycle(self._commands)
-
 
     def play_util_n_rocks_at_rest(self, target_rocks_at_rest: int):
         self.target_rocks_at_rest = target_rocks_at_rest
-        self.passit = False
         self.rocks_at_rest = 0
         while self.rocks_at_rest < target_rocks_at_rest:
-            #print(self.rocks_at_rest)
-            #if self.passit:
-            #    self.move_delta(self._yoffset)
             self.drop_one_rock()
             self.rocks_at_rest += 1
             self.simplify()
 
     def drop_one_rock(self):
         r = next(self._rock_generator)
-        appear_pos = self._appear_dx + self._left_wall_x + 1j * (self._appear_dy + self.maxy_rocks)
+        appear_pos = (
+            self._appear_dx
+            + self._left_wall_x
+            + 1j * (self._appear_dy + self.maxy_rocks)
+        )
         r.move_delta(appear_pos)
         self.grow_walls(r.maxy)
         r.is_moving = True
@@ -177,6 +187,12 @@ class RockTrix(CellBunch):
         self.add_more_cells(r)
 
     def simplify(self):
+        """Remove lower layers of rock that are no longer useful.
+
+        To start with, identify the cells with rock at the top of each column.
+        Because there might be overhangs, a few rows extra are kept.
+        """
+        EXTRA_TO_KEEP = 4
         max_y_per_column = defaultdict(int)
         for pos, c in self:
             x, y = pos.real, pos.imag
@@ -185,43 +201,51 @@ class RockTrix(CellBunch):
         miny = min(max_y_per_column.values())
         for pos, c in self:
             x, y = pos.real, pos.imag
-            if y < miny - 4:  # 4 magic constant based on trial and error (to avoid holes under ledges)
+            if y < miny - EXTRA_TO_KEEP:
                 to_remove.add(pos)
         self.remove_pos(to_remove)
 
     @property
     def maxy_rocks(self):
         try:
-            return round(max(pos.imag for pos, c in self if c.material is Material.rock))
+            return round(
+                max(pos.imag for pos, c in self if c.material is Material.rock)
+            )
         except ValueError:
             return 0
 
     def try_push_rock(self, r: Rock):
         wind = next(self._command_generator)
-        if self._command_id % len(self._commands) == 0 and not self.passit and not self._command_id==0:
-
-            h = (self.to_str(self.miny*1j), r.to_str(self.miny*1j))
-            print(h)
-            if not h in self._seen_positions:
-                self._seen_positions[h] = (self.rocks_at_rest, self.maxy)
-            else:
-                print(h)
-                delta_rocks_at_rest = self.rocks_at_rest - self._seen_positions[h][0]
-                delta_maxy = self.maxy - self._seen_positions[h][1]
-                print(delta_rocks_at_rest, delta_maxy)
-                reps = (self.target_rocks_at_rest-self.rocks_at_rest) // delta_rocks_at_rest
-                self.rocks_at_rest += reps * delta_rocks_at_rest
-                self._yoffset = reps * delta_maxy
-                self.move_delta(self._yoffset*1j)
-                r.move_delta(self._yoffset*1j)
-                self.passit = True
-
+        if self._command_id % len(self._commands) == 0 and not self._command_id == 0:
+            self.apply_shortcut(r)
         self._command_id += 1
-        #    #self._seen_positions
-
         r.move_delta(wind)
         if r.clashes_with(self):
             r.move_delta(-wind)
+
+    def apply_shortcut(self, falling_rock: Rock):
+        """Every time the input wind cycles, we keep track of the current positions.
+
+        As soon as it repeats itself, we can skip many simulations.
+        The seen positions are kept relative to bottom left corner, where
+        the y coordinate is taken from the lowest block of rock.
+        """
+        h = (self.to_str(self.miny * 1j), falling_rock.to_str(self.miny * 1j))
+        if not h in self._seen_positions:
+            self._seen_positions[h] = (self.rocks_at_rest, self.maxy)
+        else:
+            # we were exactly at this position before... since then we have
+            # more rocks at rest and the rocks are higher.
+            delta_rocks_at_rest = self.rocks_at_rest - self._seen_positions[h][0]
+            delta_maxy = self.maxy - self._seen_positions[h][1]
+            # we increment the counters to be close to the number of rocks we need to drop
+            reps = (
+                self.target_rocks_at_rest - self.rocks_at_rest
+            ) // delta_rocks_at_rest
+            self.rocks_at_rest += reps * delta_rocks_at_rest
+            y_offset = reps * delta_maxy
+            self.move_delta(y_offset * 1j)
+            falling_rock.move_delta(y_offset * 1j)
 
     def try_lower_rock(self, r: Rock):
         gravity = -1j
@@ -233,9 +257,21 @@ class RockTrix(CellBunch):
     def grow_walls(self, maxy: int):
         current_top_y = self.maxy
         self.add_more_cells(
-            CellBunch({self._left_wall_x + 1j * y: Cell(Material.wall) for y in range(current_top_y + 1, maxy + 1)}))
+            CellBunch(
+                {
+                    self._left_wall_x + 1j * y: Cell(Material.wall)
+                    for y in range(current_top_y + 1, maxy + 1)
+                }
+            )
+        )
         self.add_more_cells(
-            CellBunch({self._right_wall_x + 1j * y: Cell(Material.wall) for y in range(current_top_y + 1, maxy + 1)}))
+            CellBunch(
+                {
+                    self._right_wall_x + 1j * y: Cell(Material.wall)
+                    for y in range(current_top_y + 1, maxy + 1)
+                }
+            )
+        )
 
 
 def part_1(inp):
@@ -261,6 +297,7 @@ def main(input_file):
     inp = read_input(input_file)
     p2 = part_2(inp)
     print(f"Solution to part 2: {p2}")
+    assert 1580758017509 == p2
     return p1, p2
 
 
@@ -274,6 +311,7 @@ def test_sample_2(self):
     print("part 2 test...")
     inp = read_input("sample_1")
     self.assertEqual(1514285714288, part_2(inp))
+    print("part 2 test done")
 
 
 if __name__ == "__main__":
