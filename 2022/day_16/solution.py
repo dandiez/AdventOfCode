@@ -1,11 +1,12 @@
 import dataclasses
 import itertools
-from functools import lru_cache
-from typing import Iterable
 from unittest import TestCase
 import networkx as nx
 
 Location = str
+
+ReleasedFlow = int
+TIME_TO_OPEN_ONE_VALVE = 1
 
 
 @dataclasses.dataclass(frozen=True)
@@ -29,118 +30,145 @@ class Valve:
 def read_input(filename="input"):
     with open(filename) as f:
         lines = [line.strip() for line in f.readlines() if line.strip()]
-    return [Valve.from_str(line) for line in lines]
+    vs = [Valve.from_str(line) for line in lines]
+    return {v.name: v for v in vs}
 
 
 @dataclasses.dataclass(frozen=True)
-class State:
-    location: str
-    minutes_left: int
-    open_valves: tuple[bool]
+class Progress:
+    time_left: int
+    released_flow: int
+    current_flow_rate: int
+    visited: set
+    to_visit: set
+    current: str
 
+    @property
+    def key(self):
+        return frozenset(self.visited)
 
-TIME_TO_OPEN_ONE_VALVE = 1
+    @property
+    def value(self):
+        return self.released_flow
 
-
-@dataclasses.dataclass(frozen=True)
-class Map:
-    locations: tuple[Location]
-    flow_rates: tuple[int]
-    time_to_valve: tuple[tuple[Location, Location], int]
-
-    @lru_cache(None)
-    def valves_that_can_be_opened_on_time(self, state) -> Iterable[Location]:
-        time_available = state.minutes_left - TIME_TO_OPEN_ONE_VALVE - 1  # -1 so it is useful at all
-        closed_valves = [
-            v
-            for v, isopen in zip(map.locations, state.open_valves)
-            if not isopen and v != state.location
-        ]
-        for v in closed_valves:
-            if self.time_to_reach_valve(state.location, v) <= time_available:
-                yield v
-
-    def flow_rate_at_visited(self, visited: tuple[bool]) -> int:
-        """Total flow rate produced by visited locations in one minute."""
-        return sum(f for f, v in zip(self.flow_rates, visited) if v)
-
-    def is_open(self, state: State, loc):
-        return state.open_valves[self.locations.index(loc)]
-
-    def open_valve_at_loc(self, currently_open: tuple[bool], loc: Location):
-        new_open = []
-        for current, _loc in zip(currently_open, self.locations):
-            if _loc == loc:
-                new_open.append(True)
-            else:
-                new_open.append(current)
-        return tuple(new_open)
-
-    @lru_cache(None)
-    def time_to_reach_valve(self, from_v: Valve, to_v: Valve):
-        for from_to, time in self.time_to_valve:
-            if from_to == (from_v, to_v):
-                return time
-        raise KeyError(from_v, to_v)
-
-
-@lru_cache(None)
-def find_max_pressure(state: State) -> int:
-    global map
-    current_flow_per_minute = map.flow_rate_at_visited(state.open_valves)
-    max_flows = []
-    for new_loc in map.valves_that_can_be_opened_on_time(state):
-        time_to_reach = map.time_to_reach_valve(state.location, new_loc) + TIME_TO_OPEN_ONE_VALVE
-        max_flows.append(
-            find_max_pressure(
-                State(
-                    location=new_loc,
-                    minutes_left=state.minutes_left - time_to_reach,
-                    open_valves=map.open_valve_at_loc(state.open_valves, new_loc)
-                )
-            )
-            + time_to_reach * current_flow_per_minute
+    def visit(self, target, time_needed, valves):
+        return Progress(
+            time_left=self.time_left - time_needed,
+            released_flow=time_needed * self.current_flow_rate + self.released_flow,
+            current_flow_rate=self.current_flow_rate + valves[target].flow_rate,
+            visited=set.union({target}, self.visited),
+            to_visit=set.difference(self.to_visit, {target}),
+            current=target,
         )
-    if not max_flows:
-        return current_flow_per_minute * state.minutes_left
-    return max(max_flows)
+
+    def wait(self):
+        return Progress(
+            time_left=0,
+            released_flow=self.time_left * self.current_flow_rate + self.released_flow,
+            current_flow_rate=self.current_flow_rate,
+            visited=self.visited,
+            to_visit=self.to_visit,
+            current=self.current,
+        )
 
 
-def part_1(inp: list[Valve]):
-    valves: dict[Location, Valve] = {v.name: v for v in inp}
-    time_to_valve, useful_valves = get_time_to_move_between_unblocked_valves(valves)
+class BestSoFar(dict[frozenset, ReleasedFlow]):
+    """Keep track of the best outcomes."""
 
-    global map
-    map = Map(
-        locations=tuple(useful_valves),
-        flow_rates=tuple(valves[v].flow_rate for v in useful_valves),
-        time_to_valve=tuple(time_to_valve.items()),
-    )
-    state = State(
-        location="AA",
-        minutes_left=30,
-        open_valves=tuple(False for v in useful_valves),
-    )
-    return find_max_pressure(state)
+    def add_from_progress(self, p: Progress):
+        if self.is_better_than_existing(p):
+            self[p.key] = p.value
+
+    def is_better_than_existing(self, p: Progress):
+        if p.key not in self:
+            return True
+        return p.released_flow > self[p.key]
 
 
-def get_time_to_move_between_unblocked_valves(valves):
-    adjacency_dict = {v.name: v.tunnels_to for v in valves.values()}
-    G = nx.Graph(adjacency_dict)
-    unblocked_valves = [v.name for v in valves.values() if v.flow_rate != 0]
-    unblocked_valves.append("AA")
-    time_to_valve = dict()
-    for i, j in itertools.product(unblocked_valves, repeat=2):
-        if i == j:
-            continue
-        time_to_get_there = len(nx.shortest_path(G, i, j)) - 1
-        time_to_valve[(i, j)] = time_to_get_there
-        time_to_valve[(j, i)] = time_to_get_there
-    return time_to_valve, unblocked_valves
+@dataclasses.dataclass
+class Solver:
+
+    valves: dict[Location, Valve]
+    time_to_valve: dict[tuple[Location, Location], int] = None
+    best_so_far: BestSoFar = None
+
+    def __post_init__(self):
+
+        (
+            self.time_to_valve,
+            self.useful_valves,
+        ) = self.get_time_to_move_between_unblocked_valves(self.valves)
+        self.best_so_far = BestSoFar()
+
+    def solve_part_1(self):
+        p = Progress(
+            time_left=30,
+            released_flow=0,
+            current_flow_rate=0,
+            visited=set(),
+            to_visit={v for v in self.useful_valves if v != "AA"},
+            current="AA",
+        )
+        self.visit(p)
+        return max(f for f in self.best_so_far.values())
+
+    def solve_part_2(self):
+        p = Progress(
+            time_left=26,
+            released_flow=0,
+            current_flow_rate=0,
+            visited=set(),
+            to_visit={v for v in self.useful_valves if v != "AA"},
+            current="AA",
+        )
+        self.visit(p)
+        max_combined = 0
+        for i_open, ele_opens in itertools.combinations(self.best_so_far.keys(), 2):
+            if set.isdisjoint(set(i_open), set(ele_opens)):
+                comb = self.best_so_far[i_open] + self.best_so_far[ele_opens]
+                max_combined = max(max_combined, comb)
+        return max_combined
+
+    def visit(self, p: Progress):
+        no_more_to_visit = True
+        for target in p.to_visit:
+            time_needed = (
+                self.time_to_valve[(p.current, target)] + TIME_TO_OPEN_ONE_VALVE
+            )
+            if p.time_left >= time_needed:
+                no_more_to_visit = False
+                candidate = p.visit(target, time_needed, self.valves)
+                self.visit(candidate)
+        if no_more_to_visit:
+            self.best_so_far.add_from_progress(p.wait())
+
+    @staticmethod
+    def get_time_to_move_between_unblocked_valves(valves: dict[Location, Valve]):
+        """Simplify graph. Only consider useful (initial and unblocked) valves.
+
+        Calculate the times to get from any useful valve to any other
+        useful valve.
+        """
+        adjacency_dict = {v.name: v.tunnels_to for v in valves.values()}
+        G = nx.Graph(adjacency_dict)
+        useful_valves = [v.name for v in valves.values() if v.flow_rate != 0]
+        useful_valves.append("AA")
+        time_to_valve = dict()
+        for i, j in itertools.permutations(useful_valves, 2):
+            time_to_get_there = len(nx.shortest_path(G, i, j)) - 1
+            time_to_valve[(i, j)] = time_to_get_there
+            time_to_valve[(j, i)] = time_to_get_there
+        return time_to_valve, useful_valves
+
+
+def part_1(inp):
+    s = Solver(valves=inp)
+    return s.solve_part_1()
 
 
 def part_2(inp):
-    pass
+    s = Solver(valves=inp)
+    return s.solve_part_2()
 
 
 def main(input_file):
@@ -160,20 +188,10 @@ def main(input_file):
 def test_sample_1(self):
     inp = read_input("sample_1")
     self.assertEqual(1651, part_1(inp))
-    find_max_pressure.cache_clear()
-    Map.valves_that_can_be_opened_on_time.cache_clear()
-    Map.time_to_reach_valve.cache_clear()
-
-
-def test_sample_2(self):
-    # inp = read_input("sample_1")
-    # self.assertEqual(1, part_1(inp))
-    pass
 
 
 if __name__ == "__main__":
     print("*** solving tests ***")
     test_sample_1(TestCase())
-    test_sample_2(TestCase())
     print("*** solving main ***")
     main("input")
