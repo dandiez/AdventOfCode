@@ -1,14 +1,16 @@
 import dataclasses
 from unittest import TestCase
 
+import networkx as nx
 import numpy as np
 
 
 def get_six_directions():
-    pos_units = [np.array([1,0,0]), np.array([0,-1,0]), np.array([0,0,-1])]
+    pos_units = [np.array([1, 0, 0]), np.array([0, -1, 0]), np.array([0, 0, -1])]
     neg_units = [-a for a in pos_units]
     yield from pos_units
     yield from neg_units
+
 
 @dataclasses.dataclass(frozen=True)
 class Point:
@@ -16,16 +18,12 @@ class Point:
 
     @classmethod
     def from_string(cls, s: str):
-        return cls(
-            tuple(
-                [int(n) for n in s.split(",")]
-            ))
+        return cls(tuple([int(n) for n in s.split(",")]))
 
     def neighbours(self):
         center = np.array(self.coords)
         for d in get_six_directions():
-            yield Point(tuple(center+d))
-
+            yield Point(tuple(center + d))
 
 
 def read_input(filename="input"):
@@ -42,7 +40,29 @@ def part_1(inp):
 
 
 def part_2(inp):
-    pass
+    lava = set(inp)
+    air = set(n for p in lava for n in p.neighbours() if n not in lava)
+    more_air = set(n for p in air for n in p.neighbours() if n not in lava)
+    air.update(more_air)
+
+    G = nx.Graph()
+    for p in lava:
+        G.add_node(p)
+    for p in air:
+        G.add_node(p)
+    for n in G.nodes:
+        for nei in n.neighbours():
+            if nei in air or nei in lava:
+                G.add_edge(n, nei)
+
+    max_x = max(p.coords[0] for p in air)
+    outside_air = next(p for p in air if p.coords[0] == max_x)
+
+    for n in lava:
+        G.remove_node(n)
+
+    air_outside = set(n for n in air if nx.has_path(G, outside_air, n))
+    return sum(n not in lava for p in lava for n in p.neighbours() if n in air_outside)
 
 
 def main(input_file):
@@ -62,13 +82,11 @@ def main(input_file):
 def test_sample_1(self):
     inp = read_input("sample_1")
     self.assertEqual(64, part_1(inp))
-    pass
 
 
 def test_sample_2(self):
-    # inp = read_input("sample_1")
-    # self.assertEqual(1, part_1(inp))
-    pass
+    inp = read_input("sample_1")
+    self.assertEqual(58, part_2(inp))
 
 
 if __name__ == "__main__":
