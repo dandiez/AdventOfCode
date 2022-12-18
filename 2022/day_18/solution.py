@@ -52,7 +52,7 @@ def part_2(inp):
         G.add_node(p)
     for n in G.nodes:
         for nei in n.neighbours():
-            if nei in air or nei in lava:
+            if nei in G.nodes:
                 G.add_edge(n, nei)
 
     max_x = max(p.coords[0] for p in air)
