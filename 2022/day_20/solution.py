@@ -88,14 +88,6 @@ class Chain:
             target = target.predecessor
         return target
 
-    def show(self):
-        v = []
-        current = self.numbs[0]
-        for _ in range(len(self.numbs)):
-            v.append(str(current.value))
-            current = current.successor
-        print(", ".join(v))
-
     def check_integrity(self):
         seen = set()
         t = self.zero
