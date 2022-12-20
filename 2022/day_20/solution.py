@@ -118,12 +118,11 @@ def part_1(inp):
 
 def part_2(inp):
     decr_key = 811589153
-    c = Chain.from_list_of_ints([i*decr_key for i in inp])
+    c = Chain.from_list_of_ints([i * decr_key for i in inp])
     for _ in range(10):
         c.mix()
     positions = [1000, 2000, 3000]
     return sum(c.move_cursor_forward(c.zero, pos).value for pos in positions)
-
 
 
 def main(input_file):
