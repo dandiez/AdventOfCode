@@ -1,7 +1,15 @@
 from __future__ import annotations
 import dataclasses
 from unittest import TestCase
+
+import numpy as np
 from scipy.optimize import fsolve
+
+
+def read_input(filename="input") -> list[str]:
+    with open(filename) as f:
+        lines = [line.strip() for line in f.readlines() if line.strip()]
+    return lines
 
 
 @dataclasses.dataclass
@@ -40,44 +48,35 @@ class Monkey:
             case z: raise ValueError(f"unknown operator: {z}")
 
 
-def read_input(filename="input") -> dict[str, Monkey]:
-    with open(filename) as f:
-        lines = [line.strip() for line in f.readlines() if line.strip()]
-    return lines
-
-
 @dataclasses.dataclass
 class Monkeys:
-    _monkeys: dict[str, Monkey]
-    _raw: list[str]
+    raw: list[str]
+    monkeys: dict[str, Monkey] = None
 
-    @classmethod
-    def from_inp(cls, inp: list[str]):
-        ms = [Monkey.from_line(val) for val in inp]
-        return cls(
-            _monkeys={m.name: m for m in ms},
-            _raw=inp
-        )
+    def __post_init__(self):
+        self.process_raw()
+
+    def process_raw(self):
+        ms = [Monkey.from_line(val) for val in self.raw]
+        self.monkeys = {m.name: m for m in ms}
 
     def p2_reset(self):
-        ms = [Monkey.from_line(val) for val in self._raw]
-        self._monkeys = {m.name: m for m in ms}
-        self._monkeys["root"].operator = "-"
-        self._monkeys["humn"] = Monkey(name="humn")
+        self.process_raw()
+        self.monkeys["root"].operator = "-"
 
-    def get_root(self, human: int):
+    def get_root(self, human: np.ndarray):
         self.p2_reset()
-        self._monkeys["humn"].result = human[0]
-        return self._monkeys["root"].get_result(self._monkeys)
+        self.monkeys["humn"] = Monkey(name="humn", result=human[0])
+        return self.monkeys["root"].get_result(self.monkeys)
 
 
 def part_1(inp):
-    monkeys = Monkeys.from_inp(inp)
-    return monkeys._monkeys["root"].get_result(monkeys._monkeys)
+    monkeys = Monkeys(inp)
+    return monkeys.monkeys["root"].get_result(monkeys.monkeys)
 
 
 def part_2(inp):
-    monkeys = Monkeys.from_inp(inp)
+    monkeys = Monkeys(inp)
     h = fsolve(monkeys.get_root, 100000000)
     return int(h[0])
 
