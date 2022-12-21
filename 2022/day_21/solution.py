@@ -32,7 +32,12 @@ class Monkey:
     def calculate(self, all_monkeys: dict[str, Monkey]):
         a = all_monkeys[self.left].get_result(all_monkeys)
         b = all_monkeys[self.right].get_result(all_monkeys)
-        return eval(f"{a}{self.operator}{b}")
+        match self.operator:
+            case "-": return a - b
+            case "+": return a + b
+            case "*": return a * b
+            case "/": return a / b
+            case z: raise ValueError(f"unknown operator: {z}")
 
 
 def read_input(filename="input") -> dict[str, Monkey]:
