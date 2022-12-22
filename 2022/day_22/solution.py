@@ -1,5 +1,8 @@
 from __future__ import annotations
+
+import contextlib
 import dataclasses
+import math
 from enum import Enum
 from typing import Literal, Iterable
 from typing import TypeAlias
@@ -17,6 +20,33 @@ ROTATIONS = {"R": -1j, "L": 1j}
 Location: TypeAlias = complex
 Dir: TypeAlias = complex  # one of [RIGHT, DOWN, LEFT, UP]
 Instruction = int | Literal["R", "L"]
+
+# Topology for part 2 hardcoded :S
+#  Example
+# CUBE_EDGES = {
+#     (3, UP): (1, RIGHT),
+#     (3, DOWN): (5, RIGHT),
+#     (2, UP): (1, DOWN),
+#     (2, DOWN): (5, UP),
+#     (4, RIGHT): (6, DOWN),
+#     (1, RIGHT): (6, LEFT),
+#     (2, LEFT): (6, UP),
+# }
+# MOD_TO_PANEL_MAP = {2j: 1, 1: 2, 1 + 1j: 3, 1 + 2j: 4, 2 + 2j: 5, 2 + 3j: 6}
+CUBE_EDGES = {
+    (1, DOWN): (3, LEFT),
+    (1, RIGHT): (4, LEFT),
+    (3, LEFT): (5, DOWN),
+    (4, DOWN): (6, LEFT),
+    (2, LEFT): (5, RIGHT),
+    (2, UP): (6, RIGHT),
+    (1, UP): (6, UP),
+}
+MOD_TO_PANEL_MAP = {1j: 2, 2j: 1, 1 + 1j: 3, 2 + 1j: 4, 2: 5, 3: 6}
+inverse = {}
+for a, b in CUBE_EDGES.items():
+    inverse[(b[0], -b[1])] = (a[0], -a[1])
+CUBE_EDGES = {**CUBE_EDGES, **inverse}
 
 
 class WallOnTheWay(Exception):
@@ -56,6 +86,7 @@ class Cell:
     coords: complex
     material: Mat
     neighbours: dict[Dir, Cell] = dataclasses.field(default_factory=dict)
+    panel: int = None
 
 
 @dataclasses.dataclass
@@ -152,7 +183,6 @@ class Board:
                 self.agent.rotate(i)
             else:
                 self.move_agent(i)
-            #  print(self)
 
     def move_agent(self, n: int):
         for _ in range(n):
@@ -185,6 +215,104 @@ class Board:
         return "".join(chars)
 
 
+@dataclasses.dataclass
+class Boardp2(Board):
+    panels: dict[int, list[Cell]] = None
+
+    def __post_init__(self):
+        self.populate_panel()
+        super().__post_init__()
+
+    def populate_panel(self):
+        num_cells = len(self.cells)
+        edge_length = round(math.sqrt(num_cells / 6))
+
+        for c in self.cells:
+            xnorm = (c.real - 1) // edge_length
+            ynorm = (c.imag - 1) // edge_length
+            self.cells[c].panel = MOD_TO_PANEL_MAP[xnorm + 1j * ynorm]
+        self.panels = {
+            p: [c for c in self.cells.values() if c.panel == p] for p in range(1, 7)
+        }
+
+    def move_agent_one(self):
+        a_loc = self.agent.location
+        if a_loc.coords.real == 4:
+            pass
+        destination = a_loc.neighbours[self.agent.facing]
+        if destination.material is Mat.wall:
+            raise WallOnTheWay()
+        else:
+            self.agent.location = destination
+            with contextlib.suppress(StopIteration):
+                self.agent.facing = self.get_new_agent_facing(a_loc, destination)
+
+    def get_new_agent_facing(self, old_loc: Cell, new_loc: Cell):
+        old_panel = old_loc.panel
+        new_panel = new_loc.panel
+        return next(
+            b[1]
+            for a, b in CUBE_EDGES.items()
+            if a[0] == old_panel and b[0] == new_panel
+        )
+
+    def connect_cells(self):
+        for c in self.cells.values():
+            for d in DIRS:
+                neighbour_loc = c.coords + d
+                if neighbour_loc not in self.cells:
+                    neighbour_loc, agent_rotation = self.get_cube_neighbour_coords(c, d)
+                c.neighbours[d] = self.cells[neighbour_loc]
+
+    def get_cube_neighbour_coords(self, c: Cell, exit_dir: Dir):
+        pos_from_left = self.get_pos_from_left(c, exit_dir)
+        current_panel = c.panel
+        dest_panel, entry_dir = CUBE_EDGES[(current_panel, exit_dir)]
+        c = self.get_cell_in_panel(dest_panel, entry_dir, pos_from_left)
+        agent_new_dir = entry_dir
+        return c.coords, agent_new_dir
+
+    def get_pos_from_left(self, c: Cell, exit_dir: Dir):
+        """0-indexed position on the edge from the left side."""
+        pos = -1
+        check_dir = exit_dir * ROTATIONS["L"]
+        loc = c.coords
+        while True:
+            if self._not_in_same_panel(c.panel, loc):
+                break
+            loc += check_dir
+            pos += 1
+        return pos
+
+    def _not_in_same_panel(self, source_panel, location):
+        if location not in self.cells:
+            return True
+        if self.cells[location].panel != source_panel:
+            return True
+        return False
+
+    def get_cell_in_panel(self, panel_num, entry_dir, pos_from_left):
+        corner_cell = self.get_corner_cell_on_entry(panel_num, entry_dir)
+        return self.cells[
+            corner_cell.coords + pos_from_left * entry_dir * ROTATIONS["R"]
+        ]
+
+    def get_corner_cell_on_entry(self, panel_num: int, entry_dir: Dir):
+        back_dir = -entry_dir
+        left_dir = entry_dir * ROTATIONS["L"]
+        back_leftmost = self.panels[panel_num][0].coords
+        while True:
+            t = back_leftmost + left_dir
+            if not self._not_in_same_panel(panel_num, t):
+                back_leftmost = t
+                continue
+            t = back_leftmost + back_dir
+            if not self._not_in_same_panel(panel_num, t):
+                back_leftmost = t
+                continue
+            return self.cells[back_leftmost]
+
+
 def read_input(filename="input"):
     with open(filename) as f:
         return f.read()
@@ -197,7 +325,9 @@ def part_1(inp):
 
 
 def part_2(inp):
-    pass
+    b = Boardp2.from_inp(inp)
+    b.run_instructions()
+    return b.get_final_password()
 
 
 def main(input_file):
@@ -220,14 +350,13 @@ def test_sample_1(self):
 
 
 def test_sample_2(self):
-    # inp = read_input("sample_1")
-    # self.assertEqual(1, part_1(inp))
-    pass
+    inp = read_input("sample_1")
+    self.assertEqual(5031, part_2(inp))
 
 
 if __name__ == "__main__":
     print("*** solving tests ***")
-    test_sample_1(TestCase())
-    test_sample_2(TestCase())
+    # test_sample_1(TestCase())
+    # test_sample_2(TestCase())
     print("*** solving main ***")
     main("input")
