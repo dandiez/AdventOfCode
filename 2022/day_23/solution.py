@@ -113,10 +113,13 @@ class Grove:
             s.append("\n")
         print("".join(s))
 
-    def split_up(self, number_of_rounds=10):
-        for _ in range(number_of_rounds):
-            self.split_up_one_round()
-            next(self.dir_generator)
+    def split_up(self, number_of_rounds=100000):
+        for round_id in range(number_of_rounds):
+            try:
+                self.split_up_one_round()
+                next(self.dir_generator)
+            except RuntimeWarning:
+                return round_id + 1
 
     def split_up_one_round(self):
         proposed = self.phase_1()
@@ -159,6 +162,8 @@ class Grove:
                 continue
             else:
                 to_move.append((loc, e))
+        if not to_move:
+            raise RuntimeWarning("No elves moved!")
         for loc, e in to_move:
             del self.elves[loc]
             self.elves[e.target_loc] = e
@@ -183,7 +188,8 @@ def part_1(inp):
 
 
 def part_2(inp):
-    pass
+    g = Grove.from_input(inp)
+    return g.split_up(100000000)
 
 
 def read_input(filename="input"):
@@ -211,8 +217,8 @@ def test_sample_1(self):
 
 
 def test_sample_2(self):
-    # inp = read_input("sample_1")
-    # self.assertEqual(1, part_1(inp))
+    inp = read_input("sample_1")
+    self.assertEqual(20, part_2(inp))
     pass
 
 
