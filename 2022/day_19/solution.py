@@ -112,21 +112,19 @@ class Factory:
                     pr > maxpr
                     for pr, maxpr in zip(new_f.prod_per_min, blueprint.max_any)
                 ):
-                    # print(f"New prod would be {new_f.prod_per_min}. Max ever needed is {blueprint.max_any}")
                     continue
                 new_states.append(new_f)
-        if not new_states:
-            f = Factory(
-                ores=self.ores + self.prod_per_min * self.time_left,
-                prod_per_min=self.prod_per_min,
-                time_left=0,
-            )
-            if f.ores[Material.open_geode.value] != 0:
-                # print(f"Cashing in {f}")
-                return [f]
-            return []
-        else:
+        if new_states:
             return new_states
+        f = Factory(
+            ores=self.ores + self.prod_per_min * self.time_left,
+            prod_per_min=self.prod_per_min,
+            time_left=0,
+        )
+        if f.ores[Material.open_geode.value] != 0:
+            return [f]
+        return []
+
 
     def build(self, robot_type: RobotType):
         mats_needed = robot_type.cost - self.ores
@@ -177,17 +175,14 @@ class BestSoFar(set):
             self.max_open = opge
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True, order=True)
 class FactoryWithPrio:
-    factory: Factory
+    factory: Factory = dataclasses.field(compare=False)
     prio: int
 
     @classmethod
     def from_factory(cls, f: Factory):
         return cls(f, prio=f.priority())
-
-    def __lt__(self, other):
-        return self.prio < other.prio
 
 
 @dataclasses.dataclass
