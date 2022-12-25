@@ -3,6 +3,7 @@ from __future__ import annotations
 import dataclasses
 import re
 from enum import Enum
+from functools import lru_cache
 from math import prod
 from queue import Queue, PriorityQueue, LifoQueue
 from typing import Iterable
@@ -107,14 +108,19 @@ class Factory:
         for robot_type in blueprint.robot_types:
             new_f = self.build(robot_type)
             if new_f is not None:
-                if any(pr > maxpr for pr, maxpr in zip(new_f.prod_per_min, blueprint.max_any)):
+                if any(
+                    pr > maxpr
+                    for pr, maxpr in zip(new_f.prod_per_min, blueprint.max_any)
+                ):
                     # print(f"New prod would be {new_f.prod_per_min}. Max ever needed is {blueprint.max_any}")
                     continue
                 new_states.append(new_f)
         if not new_states:
-            f = Factory(ores=self.ores + self.prod_per_min * self.time_left,
-                        prod_per_min=self.prod_per_min,
-                        time_left=0)
+            f = Factory(
+                ores=self.ores + self.prod_per_min * self.time_left,
+                prod_per_min=self.prod_per_min,
+                time_left=0,
+            )
             if f.ores[Material.open_geode.value] != 0:
                 # print(f"Cashing in {f}")
                 return [f]
@@ -126,26 +132,36 @@ class Factory:
         mats_needed = robot_type.cost - self.ores
         current_prod = self.prod_per_min
         try:
-            time_per_mat = [max(-(m // -c), 0) if m != 0 else 0 for m, c in zip(mats_needed, current_prod)]
+            time_per_mat = [
+                max(-(m // -c), 0) if m != 0 else 0
+                for m, c in zip(mats_needed, current_prod)
+            ]
         except ZeroDivisionError:
             return
         time_to_wait = max(time_per_mat) + 1
         if time_to_wait >= self.time_left:
             return
-        f = Factory(ores=self.ores + self.prod_per_min * time_to_wait - robot_type.cost,
-                    prod_per_min=self.prod_per_min + robot_type.prod_per_min,
-                    time_left=self.time_left - time_to_wait
-                    )
+        f = Factory(
+            ores=self.ores + self.prod_per_min * time_to_wait - robot_type.cost,
+            prod_per_min=self.prod_per_min + robot_type.prod_per_min,
+            time_left=self.time_left - time_to_wait,
+        )
         return f
 
-    def priority(self):
+    @lru_cache()
+    def optimistic_total_geodes(self):
+        current = self.ores[Material.open_geode.value]
+        inprod = self.prod_per_min[Material.open_geode.value]
+        turns_left = self.time_left
+        max_prod = (turns_left * (turns_left - 1)) // 2
+        return max_prod + inprod * turns_left + current
 
-        # ore_value = Mats(1, 10, 100, 1000).dot(self.ores)
-        production_value = (
-            Mats(1, 10, 100, 1000).dot(self.prod_per_min)
-        )
+    def priority(self):
+        ore_value = Mats(1, 10, 100, 1000).dot(self.ores)
+        production_value = Mats(1, 10, 100, 1000).dot(self.prod_per_min)
         # return self.time_left
-        return -production_value
+        return -self.optimistic_total_geodes()
+        # return -production_value
 
 
 class BestSoFar(set):
@@ -157,7 +173,7 @@ class BestSoFar(set):
         self.add(f)
         opge = f.ores[Material.open_geode.value]
         if opge > self.max_open:
-            print(opge)
+            # print(opge)
             self.max_open = opge
 
 
@@ -171,7 +187,7 @@ class FactoryWithPrio:
         return cls(f, prio=f.priority())
 
     def __lt__(self, other):
-        return (self.prio,) < (other.prio,)
+        return self.prio < other.prio
 
 
 @dataclasses.dataclass
@@ -188,9 +204,13 @@ class QualityFinder:
         self.seen.register(starting_factory)
         while not to_see.empty():
             f = to_see.get().factory
+            if f.optimistic_total_geodes() <= self.seen.max_open:
+                continue
             options = f.next_states(self.blueprint)
             for next_f in options:
                 if next_f in self.seen:
+                    continue
+                if next_f.optimistic_total_geodes() <= self.seen.max_open:
                     continue
                 self.seen.register(next_f)
                 to_see.put(FactoryWithPrio.from_factory(next_f))
@@ -198,13 +218,16 @@ class QualityFinder:
 
 
 def part_2(inp):
-    return prod(QualityFinder(blueprint=b, seen=BestSoFar()).find_most_ores(
-        Factory(
-            ores=Mats(0, 0, 0, 0),
-            prod_per_min=Mats.from_dict({Material.ore: 1}),
-            time_left=32,
+    return prod(
+        QualityFinder(blueprint=b, seen=BestSoFar()).find_most_ores(
+            Factory(
+                ores=Mats(0, 0, 0, 0),
+                prod_per_min=Mats.from_dict({Material.ore: 1}),
+                time_left=32,
+            )
         )
-    ) for b in inp[:3])
+        for b in inp[:3]
+    )
 
 
 def part_1(inp):
@@ -236,28 +259,44 @@ def main(input_file):
 
 def test_sample_1(self):
     inp = read_input("sample_1")
-    # print(inp[0])
-    # q = QualityFinder(blueprint=inp[0], seen=BestSoFar()).find_quality(
-    #     Factory(
-    #         ores=Mats(0, 0, 0, 0),
-    #         prod_per_min=Mats.from_dict({Material.ore: 1}),
-    #         time_left=24,
-    #     )
-    # )
-    # self.assertEqual(9, q)
+    q = QualityFinder(blueprint=inp[0], seen=BestSoFar()).find_quality(
+        Factory(
+            ores=Mats(0, 0, 0, 0),
+            prod_per_min=Mats.from_dict({Material.ore: 1}),
+            time_left=24,
+        )
+    )
+    self.assertEqual(9, q)
     self.assertEqual(33, part_1(inp))
-    pass
 
 
 def test_sample_2(self):
-    # inp = read_input("sample_1")
-    # self.assertEqual(1, part_1(inp))
-    pass
+    inp = read_input("sample_1")
+    self.assertEqual(
+        56,
+        QualityFinder(blueprint=inp[0], seen=BestSoFar()).find_most_ores(
+            Factory(
+                ores=Mats(0, 0, 0, 0),
+                prod_per_min=Mats.from_dict({Material.ore: 1}),
+                time_left=32,
+            )
+        ),
+    )
+    self.assertEqual(
+        62,
+        QualityFinder(blueprint=inp[1], seen=BestSoFar()).find_most_ores(
+            Factory(
+                ores=Mats(0, 0, 0, 0),
+                prod_per_min=Mats.from_dict({Material.ore: 1}),
+                time_left=32,
+            )
+        ),
+    )
 
 
 if __name__ == "__main__":
     print("*** solving tests ***")
-    # test_sample_1(TestCase())
-    # test_sample_2(TestCase())
+    test_sample_1(TestCase())
+    test_sample_2(TestCase())
     print("*** solving main ***")
     main("input")
