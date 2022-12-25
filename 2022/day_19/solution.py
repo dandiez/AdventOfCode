@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 import dataclasses
 import re
 from enum import Enum
@@ -76,7 +75,7 @@ class Blueprint:
 
     def max_cost_any_mat(self):
         mx = Mats.max_any(b.cost for b in self.robot_types)
-        mx+= Mats.from_dict({Material.open_geode:9e99})
+        mx += Mats.from_dict({Material.open_geode: 9e99})
         return mx
 
 
@@ -108,8 +107,8 @@ class Factory:
         for robot_type in blueprint.robot_types:
             new_f = self.build(robot_type)
             if new_f is not None:
-                if any(pr > maxpr for pr, maxpr in zip(new_f.prod_per_min, blueprint.max_any) ):
-                    #print(f"New prod would be {new_f.prod_per_min}. Max ever needed is {blueprint.max_any}")
+                if any(pr > maxpr for pr, maxpr in zip(new_f.prod_per_min, blueprint.max_any)):
+                    # print(f"New prod would be {new_f.prod_per_min}. Max ever needed is {blueprint.max_any}")
                     continue
                 new_states.append(new_f)
         if not new_states:
@@ -117,7 +116,7 @@ class Factory:
                         prod_per_min=self.prod_per_min,
                         time_left=0)
             if f.ores[Material.open_geode.value] != 0:
-                #print(f"Cashing in {f}")
+                # print(f"Cashing in {f}")
                 return [f]
             return []
         else:
@@ -172,7 +171,7 @@ class FactoryWithPrio:
         return cls(f, prio=f.priority())
 
     def __lt__(self, other):
-        return (self.prio, ) < (other.prio,)
+        return (self.prio,) < (other.prio,)
 
 
 @dataclasses.dataclass
@@ -183,7 +182,7 @@ class QualityFinder:
     def find_quality(self, starting_factory: Factory):
         return self.blueprint.id * self.find_most_ores(starting_factory)
 
-    def find_most_ores(self, starting_factory:Factory):
+    def find_most_ores(self, starting_factory: Factory):
         to_see = PriorityQueue()
         to_see.put(FactoryWithPrio.from_factory(starting_factory))
         self.seen.register(starting_factory)
@@ -197,15 +196,15 @@ class QualityFinder:
                 to_see.put(FactoryWithPrio.from_factory(next_f))
         return self.seen.max_open
 
+
 def part_2(inp):
     return prod(QualityFinder(blueprint=b, seen=BestSoFar()).find_most_ores(
-            Factory(
-                ores=Mats(0, 0, 0, 0),
-                prod_per_min=Mats.from_dict({Material.ore: 1}),
-                time_left=32,
-            )
-        ) for b in inp[:3])
-
+        Factory(
+            ores=Mats(0, 0, 0, 0),
+            prod_per_min=Mats.from_dict({Material.ore: 1}),
+            time_left=32,
+        )
+    ) for b in inp[:3])
 
 
 def part_1(inp):
@@ -224,9 +223,9 @@ def part_1(inp):
 def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
     # part 1
-   # inp = read_input(input_file)
-   # p1 = part_1(inp)
-   # print(f"Solution to part 1: {p1}")
+    inp = read_input(input_file)
+    p1 = part_1(inp)
+    print(f"Solution to part 1: {p1}")
 
     # part 2
     inp = read_input(input_file)
@@ -258,7 +257,7 @@ def test_sample_2(self):
 
 if __name__ == "__main__":
     print("*** solving tests ***")
-    #test_sample_1(TestCase())
-    #test_sample_2(TestCase())
+    # test_sample_1(TestCase())
+    # test_sample_2(TestCase())
     print("*** solving main ***")
     main("input")
