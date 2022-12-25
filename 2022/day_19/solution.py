@@ -4,6 +4,7 @@ from __future__ import annotations
 import dataclasses
 import re
 from enum import Enum
+from math import prod
 from queue import Queue, PriorityQueue, LifoQueue
 from typing import Iterable
 from unittest import TestCase
@@ -180,6 +181,9 @@ class QualityFinder:
     seen: BestSoFar
 
     def find_quality(self, starting_factory: Factory):
+        return self.blueprint.id * self.find_most_ores(starting_factory)
+
+    def find_most_ores(self, starting_factory:Factory):
         to_see = PriorityQueue()
         to_see.put(FactoryWithPrio.from_factory(starting_factory))
         self.seen.register(starting_factory)
@@ -191,11 +195,17 @@ class QualityFinder:
                     continue
                 self.seen.register(next_f)
                 to_see.put(FactoryWithPrio.from_factory(next_f))
-        return self.blueprint.id * self.seen.max_open
-
+        return self.seen.max_open
 
 def part_2(inp):
-    pass
+    return prod(QualityFinder(blueprint=b, seen=BestSoFar()).find_most_ores(
+            Factory(
+                ores=Mats(0, 0, 0, 0),
+                prod_per_min=Mats.from_dict({Material.ore: 1}),
+                time_left=32,
+            )
+        ) for b in inp[:3])
+
 
 
 def part_1(inp):
@@ -214,9 +224,9 @@ def part_1(inp):
 def main(input_file):
     """Solve puzzle and connect part 1 with part 2 if needed."""
     # part 1
-    inp = read_input(input_file)
-    p1 = part_1(inp)
-    print(f"Solution to part 1: {p1}")
+   # inp = read_input(input_file)
+   # p1 = part_1(inp)
+   # print(f"Solution to part 1: {p1}")
 
     # part 2
     inp = read_input(input_file)
@@ -248,7 +258,7 @@ def test_sample_2(self):
 
 if __name__ == "__main__":
     print("*** solving tests ***")
-    test_sample_1(TestCase())
-    test_sample_2(TestCase())
+    #test_sample_1(TestCase())
+    #test_sample_2(TestCase())
     print("*** solving main ***")
     main("input")
